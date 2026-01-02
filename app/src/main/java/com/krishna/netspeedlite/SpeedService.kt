@@ -25,7 +25,14 @@ import android.os.Looper
 import android.os.Process
 import androidx.core.app.NotificationCompat
 import androidx.core.graphics.drawable.IconCompat
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
 import java.util.Locale
 
 class SpeedService : Service() {
@@ -34,9 +41,11 @@ class SpeedService : Service() {
     private var lastRx = 0L
     private var lastTx = 0L
     private val interval = 1000L
+    private var tickCount = 0
 
-    // ⭐ NEW CHANNEL ID v5 to reset importance to a standard level
+    // Channels
     private val channelId = "speed_channel_v5"
+    private val alertChannelId = "data_alert_channel"
     private val notificationId = 1
     
     // ⭐ Fixed timestamp: marks this notification as "older" than new events (like Downloads)
@@ -44,6 +53,9 @@ class SpeedService : Service() {
 
     private lateinit var prefs: SharedPreferences
     private lateinit var networkStatsManager: NetworkStatsManager
+    
+    // Coroutine Scope for background tasks
+    private val serviceScope = CoroutineScope(Dispatchers.IO + Job())
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -51,6 +63,15 @@ class SpeedService : Service() {
     private val runnable = object : Runnable {
         override fun run() {
             updateNotificationData()
+            
+            // OPTIMIZED ALERT CHECK
+            // Check every 5 seconds instead of 60 seconds for faster feedback
+            // NetworkStatsManager query is relatively lightweight but we still respect battery
+            if (tickCount % 5 == 0) {
+                checkDataAlerts()
+            }
+            tickCount++
+            
             handler.postDelayed(this, interval)
         }
     }
@@ -62,15 +83,16 @@ class SpeedService : Service() {
         networkStatsManager = getSystemService(Context.NETWORK_STATS_SERVICE) as NetworkStatsManager
 
         createNotificationChannel()
+        createAlertChannel()
 
         lastRx = TrafficStats.getTotalRxBytes()
         lastTx = TrafficStats.getTotalTxBytes()
 
-        // 🚨 MUST START FOREGROUND IMMEDIATELY (CRASH FIX)
+        // 🚨 MUST START FOREGROUND IMMEDIATELY
         val notification = NotificationCompat.Builder(this, channelId)
             .setContentTitle("Internet Speed")
             .setContentText("Starting...")
-            .setSmallIcon(R.drawable.ic_speed) // ⚠️ ENSURE THIS EXISTS
+            .setSmallIcon(R.drawable.ic_speed)
             .setOngoing(true)
             .setSilent(true)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
@@ -78,7 +100,7 @@ class SpeedService : Service() {
             .setOnlyAlertOnce(true)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .setVisibility(NotificationCompat.VISIBILITY_SECRET) 
-            .setWhen(serviceStartTime) // ⭐ Use fixed time
+            .setWhen(serviceStartTime)
             .setShowWhen(false)
             .build()
 
@@ -88,7 +110,74 @@ class SpeedService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // We handle resets in checkDataAlerts now
         return START_STICKY
+    }
+
+    private fun checkDataAlerts() {
+        // Use "daily_limit_enabled" to match MainActivity
+        if (!prefs.getBoolean("daily_limit_enabled", false)) return
+        
+        // Launch in background to avoid blocking UI thread (update loop)
+        serviceScope.launch {
+            if (!hasUsageStatsPermission()) return@launch
+
+            val limitMb = prefs.getFloat("daily_limit_mb", 0f)
+            if (limitMb <= 0f) return@launch
+            
+            // Shared Preference Reset Logic (Check reset before querying to ensure correct day)
+            val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+            val lastChecked = prefs.getString("last_alert_date", "")
+
+            if (todayStr != lastChecked) {
+                // It's a new day, reset flags
+                prefs.edit()
+                    .putString("last_alert_date", todayStr)
+                    .putBoolean("alert_80_triggered", false)
+                    .putBoolean("alert_100_triggered", false)
+                    .apply()
+            }
+            
+            val alert80 = prefs.getBoolean("alert_80_triggered", false)
+            val alert100 = prefs.getBoolean("alert_100_triggered", false)
+
+            // OPTIMIZATION: If both alerts are already triggered, stop querying NetworkStatsManager
+            // This saves battery once the daily limit is reached and acknowledged.
+            if (alert80 && alert100) return@launch
+
+            val limitBytes = (limitMb * 1024 * 1024).toLong()
+            val (mobileUsage, _) = getTodayUsageSync() // This calls NetworkStatsManager
+
+            val percentage = (mobileUsage.toDouble() / limitBytes.toDouble()) * 100
+            
+            if (percentage >= 100 && !alert100) {
+                 sendAlertNotification(
+                    "Daily data limit reached",
+                    "Daily data limit reached."
+                )
+                prefs.edit().putBoolean("alert_100_triggered", true).apply()
+            } else if (percentage >= 80 && !alert80 && !alert100) {
+                 sendAlertNotification(
+                    "Data Warning",
+                    "You've used 80% of your daily data limit."
+                )
+                prefs.edit().putBoolean("alert_80_triggered", true).apply()
+            }
+        }
+    }
+
+    private fun sendAlertNotification(title: String, message: String) {
+        val notification = NotificationCompat.Builder(this, alertChannelId)
+            .setSmallIcon(R.drawable.ic_speed)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setContentIntent(getOpenAppIntent())
+            .build()
+
+        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        manager.notify(System.currentTimeMillis().toInt(), notification)
     }
 
     private fun updateNotificationData() {
@@ -106,7 +195,12 @@ class SpeedService : Service() {
         // 🔢 AUTO UNIT SWITCH
         val (speedVal, unitVal) =
             if (totalBytes >= 1_024_000) {
-                Pair(String.format(Locale.US, "%.1f", totalBytes / 1_048_576f), "MB/s")
+                val mb = totalBytes / 1_048_576f
+                if (mb >= 10) {
+                    Pair(String.format(Locale.US, "%.0f", mb), "MB/s")
+                } else {
+                    Pair(String.format(Locale.US, "%.1f", mb), "MB/s")
+                }
             } else {
                 Pair((totalBytes / 1024).toString(), "KB/s")
             }
@@ -116,7 +210,25 @@ class SpeedService : Service() {
 
         // ALWAYS Show today's usage if permission granted
         if (hasUsageStatsPermission()) {
-            val (mobileUsage, wifiUsage) = getTodayUsage()
+            // Need to run getTodayUsage, but it's slow-ish. 
+            // Running it on main thread here every second might cause jank.
+            // However, typical implementations do this. 
+            // If optimization is needed, we can cache usage and update every minute.
+            // For now, to keep "Real Time", we call it.
+            // But getTodayUsage calls NetworkStatsManager which is IPC.
+            // Let's optimize: Only update usage text every 5 seconds?
+            // Or just do it. Modern phones handle it okay.
+            
+            // optimization: only update usage string every 5th tick
+            // But users like real-time updates.
+            // We'll keep it for now.
+            
+            // NOTE: We should execute this carefully.
+            // For "Lite" version, maybe only update usage text every minute? 
+            // The prompt didn't ask to change this behavior, so I'll leave it but use the helper.
+             
+            // We need a synchronous version for the notification since run() is on main thread
+            val (mobileUsage, wifiUsage) = getTodayUsageSync()
             details.append("Mobile: ${formatUsage(mobileUsage)} | WiFi: ${formatUsage(wifiUsage)}")
         } else {
              details.append("Tap to grant permission for usage stats")
@@ -141,6 +253,12 @@ class SpeedService : Service() {
     }
 
     private fun getTodayUsage(): Pair<Long, Long> {
+        // This is now just a wrapper for the sync version or could be suspend
+        // Since we call it from coroutine in checkDataAlerts, it's fine.
+        return getTodayUsageSync()
+    }
+
+    private fun getTodayUsageSync(): Pair<Long, Long> {
         val calendar = Calendar.getInstance()
         calendar.set(Calendar.HOUR_OF_DAY, 0)
         calendar.set(Calendar.MINUTE, 0)
@@ -149,8 +267,17 @@ class SpeedService : Service() {
         val startTime = calendar.timeInMillis
         val endTime = System.currentTimeMillis()
 
-        val mobile = getUsage(ConnectivityManager.TYPE_MOBILE, startTime, endTime)
-        val wifi = getUsage(ConnectivityManager.TYPE_WIFI, startTime, endTime)
+        // Respect Reset Timestamp
+        val resetTimestamp = prefs.getLong("reset_timestamp", 0L)
+        val queryStartTime = if (startTime < resetTimestamp) resetTimestamp else startTime
+        
+        // If we reset today, and now is before reset, usage is 0?
+        // Actually queryStartTime handles it.
+        
+        if (endTime <= resetTimestamp) return Pair(0L, 0L)
+
+        val mobile = getUsage(ConnectivityManager.TYPE_MOBILE, queryStartTime, endTime)
+        val wifi = getUsage(ConnectivityManager.TYPE_WIFI, queryStartTime, endTime)
 
         return Pair(mobile, wifi)
     }
@@ -182,12 +309,8 @@ class SpeedService : Service() {
     private fun getWifiSignal(): Int {
         val wm = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
         return try {
-             // Manual calculation for granular result (0-100) instead of steps
+             // Manual calculation for granular result (0-100)
              val rssi = wm.connectionInfo.rssi
-             
-             // Standard WiFi RSSI ranges:
-             // > -50 dBm : 100%
-             // < -100 dBm : 0%
              val minRssi = -100
              val maxRssi = -50
              
@@ -211,7 +334,7 @@ class SpeedService : Service() {
         return when {
             bytes >= 1073741824 -> String.format(Locale.US, "%.1f GB", bytes / 1073741824f)
             bytes >= 1048576 -> String.format(Locale.US, "%.1f MB", bytes / 1048576f)
-            else -> String.format(Locale.US, "%.1f MB", bytes / 1048576f) // Default to MB if small
+            else -> String.format(Locale.US, "%.1f MB", bytes / 1048576f)
         }
     }
 
@@ -222,23 +345,20 @@ class SpeedService : Service() {
         details: String
     ): Notification {
 
-        // This makes sure the "notification bubble" (badge count) is not shown or is 0
-        // on some launchers that interpret the notification count.
         return NotificationCompat.Builder(this, channelId)
             .setSmallIcon(createSpeedIcon(speed, unit))
             .setContentTitle(title)
             .setContentText(details)
             .setOngoing(true)
             .setSilent(true)
-            .setNumber(0) // Explicitly set number to 0 to avoid badge counts
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT) // ⭐ Standard priority
+            .setNumber(0)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setContentIntent(getOpenAppIntent())
             .setOnlyAlertOnce(true)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .setVisibility(NotificationCompat.VISIBILITY_SECRET) 
-            .setWhen(serviceStartTime) // ⭐ Fixed timestamp allows newer (downloads) to rank higher
+            .setWhen(serviceStartTime)
             .setShowWhen(false)
-            // ⭐ Removed setSortKey so it respects system sorting
             .build()
     }
 
@@ -253,9 +373,6 @@ class SpeedService : Service() {
         )
     }
 
-    /**
-     * 🖼️ DYNAMIC ICON (SAFE FOR 3–4 DIGITS)
-     */
     private fun createSpeedIcon(speed: String, unit: String): IconCompat {
 
         val size = 96
@@ -268,15 +385,18 @@ class SpeedService : Service() {
             typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
         }
 
-        // SPEED TEXT
-        paint.textSize = when {
-            speed.length >= 4 -> size * 0.52f
-            speed.length == 3 -> size * 0.60f
-            else -> size * 0.72f
+        paint.textSize = size * 0.72f
+        
+        val textWidth = paint.measureText(speed)
+        val maxWidth = size * 0.94f
+        
+        if (textWidth > maxWidth) {
+            paint.textScaleX = maxWidth / textWidth
         }
+        
         canvas.drawText(speed, size / 2f, size * 0.58f, paint)
 
-        // UNIT TEXT
+        paint.textScaleX = 1.0f
         paint.textSize = size * 0.38f
         canvas.drawText(unit, size / 2f, size * 0.95f, paint)
 
@@ -288,7 +408,7 @@ class SpeedService : Service() {
             val channel = NotificationChannel(
                 channelId,
                 "Internet Speed",
-                NotificationManager.IMPORTANCE_DEFAULT // ⭐ Standard Importance
+                NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
                 setSound(null, null)
                 enableVibration(false)
@@ -300,9 +420,26 @@ class SpeedService : Service() {
                 .createNotificationChannel(channel)
         }
     }
+    
+    private fun createAlertChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                alertChannelId,
+                "Data Usage Alerts",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Notifications when daily data limit is reached"
+                enableVibration(true)
+                setShowBadge(true)
+            }
+            getSystemService(NotificationManager::class.java)
+                .createNotificationChannel(channel)
+        }
+    }
 
     override fun onDestroy() {
         handler.removeCallbacks(runnable)
+        serviceScope.cancel()
         super.onDestroy()
     }
 }

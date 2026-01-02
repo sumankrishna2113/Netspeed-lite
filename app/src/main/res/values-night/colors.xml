@@ -1,15 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Pill Colors (Dark Mode) -->
-    <color name="pillDateBg">#37474F</color>
-    <color name="pillDateText">#CFD8DC</color>
+    <!-- Refined Neutral Dark Theme (System Quality) -->
+    
+    <!-- Surfaces -->
+    <color name="colorBackground">#191C20</color> <!-- Slightly lighter charcoal for better depth -->
+    <color name="colorSurface">#20242A</color>    <!-- Subtle elevation -->
+    <color name="colorSurfaceElevated">#262B32</color>
+    
+    <!-- Primary / Brand (Muted) -->
+    <color name="colorPrimary">#23262E</color> <!-- Darker Surface for Header -->
+    <color name="colorPrimaryContainer">#262B32</color>
+    
+    <!-- Text (Refined for Comfort) -->
+    <color name="textPrimary">#E2E2E5</color>  <!-- Off-white, not harsh white -->
+    <color name="textSecondary">#8E9199</color> <!-- Balanced grey -->
+    <color name="textTertiary">#43474E</color>  <!-- Low contrast elements -->
+    
+    <!-- App Bar Specific -->
+    <color name="appBarText">#E2E2E5</color>
+    
+    <!-- Sections -->
+    <color name="colorHeaderRow">#2C323B</color> <!-- Increased contrast from background for visibility -->
+    <color name="colorBottomBar">#262B32</color>
 
-    <color name="pillMobileBg">#0D47A1</color>
-    <color name="pillMobileText">#BBDEFB</color>
+    <!-- Data Values (Desaturated Pastel Tones) -->
+    <color name="pillMobileText">#A8C7FA</color> <!-- Google Material Blue 80 -->
+    <color name="pillWifiText">#A8DAB5</color>   <!-- Muted Sage Green -->
+    <color name="pillTotalText">#D0BCFF</color>  <!-- Muted Lavender -->
 
-    <color name="pillWifiBg">#1B5E20</color>
-    <color name="pillWifiText">#C8E6C9</color>
+    <!-- Dividers & Strokes -->
+    <color name="colorDivider">#2B3038</color>
+    <color name="colorStroke">#353940</color>
+    
+    <!-- UI Controls (Explicit Definitions for Dark Mode) -->
+    <color name="radio_button_unchecked_color">#9CA3AF</color> <!-- Soft Light Grey for visibility -->
+    <color name="radio_button_checked_color">#A8C7FA</color>   <!-- Accent Blue -->
+    
+    <!-- FIX: BUTTON VISIBILITY IN DARK MODE -->
+    <color name="switch_track_unchecked_color">#555960</color> <!-- Matches unchecked track -->
+    <color name="switch_thumb_color">#E2E2E5</color>
+    
+    <!-- Use specific color for outline/border to ensure visibility against #191C20 -->
+    <color name="control_switch_track_on">#5285EA</color> 
+    <color name="control_switch_track_off">#555960</color> <!-- Visible Dark Gray -->
 
-    <color name="pillTotalBg">#4A148C</color>
-    <color name="pillTotalText">#E1BEE7</color>
+    <!-- Legacy / Unused -->
+    <color name="pillDateBg">#00000000</color>
+    <color name="pillDateText">#E2E2E5</color>
+    <color name="pillMobileBg">#00000000</color>
+    <color name="pillWifiBg">#00000000</color>
+    <color name="pillTotalBg">#00000000</color>
+    
+    <!-- Compat for existing references if any -->
+    <color name="selector_switch_thumb">#E2E2E5</color>
+    <color name="selector_switch_track">#A8C7FA</color>
+    <color name="selector_radio_tint">#8E9199</color>
 </resources>

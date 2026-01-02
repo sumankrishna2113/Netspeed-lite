@@ -1,64 +1,363 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="24dp">
+    android:background="?android:attr/colorBackground"
+    android:clickable="true"
+    android:focusable="true">
 
-    <com.google.android.material.materialswitch.MaterialSwitch
-        android:id="@+id/switchShowSpeed"
+    <!-- HEADER (Polished) -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Show Internet Speed"
-        android:textSize="16sp" />
+        android:orientation="vertical"
+        android:padding="20dp"
+        android:background="?attr/colorSurfaceVariant">
 
-    <com.google.android.material.materialswitch.MaterialSwitch
-        android:id="@+id/switchShowUpDown"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:text="Show Up/Down Speed"
-        android:textSize="16sp" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+            
+            <ImageView
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@mipmap/ic_launcher"
+                android:contentDescription="@string/app_name"
+                android:layout_marginEnd="16dp"/>
 
-    <com.google.android.material.materialswitch.MaterialSwitch
-        android:id="@+id/switchShowWifiSignal"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:text="Show WiFi Strength"
-        android:textSize="16sp" />
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+                
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Netspeed Lite"
+                    android:textSize="20sp"
+                    android:fontFamily="sans-serif-medium"
+                    android:textColor="?android:attr/textColorPrimary"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Version 1.0.3"
+                    android:textSize="13sp"
+                    android:textColor="?android:attr/textColorSecondary"
+                    android:layout_marginTop="2dp"/>
+            </LinearLayout>
+        </LinearLayout>
+        
+    </LinearLayout>
 
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:layout_marginVertical="16dp"
-        android:background="?android:attr/listDivider" />
+        android:background="@color/colorDivider"/>
 
-    <TextView
-        android:id="@+id/btnResetData"
+    <!-- CONTENT -->
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="?android:attr/selectableItemBackground"
-        android:clickable="true"
-        android:focusable="true"
-        android:paddingVertical="12dp"
-        android:text="Reset Data Usage"
-        android:textColor="?android:attr/textColorPrimary"
-        android:textSize="16sp"
-        android:textStyle="bold" />
+        android:layout_height="0dp"
+        android:layout_weight="1">
 
-    <TextView
-        android:id="@+id/btnStopExit"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:background="?android:attr/selectableItemBackground"
-        android:clickable="true"
-        android:focusable="true"
-        android:paddingVertical="12dp"
-        android:text="Stop and Exit"
-        android:textColor="#D32F2F"
-        android:textSize="16sp"
-        android:textStyle="bold" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="20dp"
+            android:paddingBottom="24dp">
+
+            <!-- Notification Settings -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Notifications"
+                android:textSize="12sp"
+                android:textAllCaps="true"
+                android:textColor="?android:attr/textColorSecondary"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="12dp"
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.05"/>
+
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/switchShowSpeed"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Show Internet Speed"
+                android:textSize="15sp"
+                android:textColor="?android:attr/textColorPrimary"/>
+
+            <View 
+                android:layout_width="match_parent" 
+                android:layout_height="1dp" 
+                android:background="@color/colorDivider"
+                android:layout_marginVertical="8dp"
+                android:alpha="0.5"/>
+
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/switchShowUpDown"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Show Up/Down Speed"
+                android:textSize="15sp"
+                android:textColor="?android:attr/textColorPrimary"/>
+
+            <View 
+                android:layout_width="match_parent" 
+                android:layout_height="1dp" 
+                android:background="@color/colorDivider"
+                android:layout_marginVertical="8dp"
+                android:alpha="0.5"/>
+
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/switchShowWifiSignal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Show WiFi Strength"
+                android:textSize="15sp"
+                android:textColor="?android:attr/textColorPrimary"/>
+
+            <!-- SECTION: Data Usage Alerts -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Data Alerts"
+                android:textSize="12sp"
+                android:textAllCaps="true"
+                android:textColor="?android:attr/textColorSecondary"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="12dp"
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.05"/>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/colorStroke"
+                app:strokeWidth="1dp"
+                app:cardBackgroundColor="?attr/colorSurface">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/switchDataAlert"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Daily Data Limit Alert"
+                        android:textSize="15sp"
+                        android:textColor="?android:attr/textColorPrimary"/>
+                    
+                    <LinearLayout
+                        android:id="@+id/layoutDataLimitOptions"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:visibility="gone"
+                        tools:visibility="visible"
+                        android:layout_marginTop="12dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:baselineAligned="false">
+
+                            <!-- Value Input -->
+                            <com.google.android.material.textfield.TextInputLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:hint="Limit"
+                                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
+                                android:layout_marginEnd="8dp">
+                                
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/etDataLimit"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:inputType="numberDecimal"
+                                    android:maxLines="1"/>
+                            </com.google.android.material.textfield.TextInputLayout>
+
+                            <!-- Unit Dropdown -->
+                            <com.google.android.material.textfield.TextInputLayout
+                                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:hint="Unit"
+                                android:minWidth="90dp">
+
+                                <AutoCompleteTextView
+                                    android:id="@+id/tvUnitSelection"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:inputType="none"
+                                    android:text="MB"
+                                    tools:ignore="LabelFor" />
+                            </com.google.android.material.textfield.TextInputLayout>
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/tvLimitError"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Please enter a valid data limit"
+                            android:textColor="@android:color/holo_red_dark"
+                            android:visibility="gone"
+                            android:textSize="12sp"
+                            android:layout_marginTop="4dp"/>
+                        
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Alerts will trigger at 80% and 100% of daily limit"
+                            android:textSize="12sp"
+                            android:textColor="?android:attr/textColorSecondary"
+                            android:layout_marginTop="6dp"/>
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- SECTION: Appearance (Fixed) -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Appearance"
+                android:textSize="12sp"
+                android:textAllCaps="true"
+                android:textColor="?android:attr/textColorSecondary"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="12dp"
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.05"/>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/colorStroke"
+                app:strokeWidth="1dp"
+                app:cardBackgroundColor="?attr/colorSurface">
+
+                <RadioGroup
+                    android:id="@+id/radioGroupTheme"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="8dp">
+
+                    <RadioButton
+                        android:id="@+id/radioThemeSystem"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="System Default"
+                        android:textSize="15sp"
+                        android:paddingVertical="10dp"
+                        android:buttonTint="@color/selector_radio_tint"
+                        android:textColor="?android:attr/textColorPrimary"/>
+                    
+                    <View 
+                        android:layout_width="match_parent" 
+                        android:layout_height="1dp" 
+                        android:background="@color/colorDivider"
+                        android:layout_marginHorizontal="12dp"/>
+
+                    <RadioButton
+                        android:id="@+id/radioThemeLight"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Light"
+                        android:textSize="15sp"
+                        android:paddingVertical="10dp"
+                        android:buttonTint="@color/selector_radio_tint"
+                        android:textColor="?android:attr/textColorPrimary"/>
+
+                    <View 
+                        android:layout_width="match_parent" 
+                        android:layout_height="1dp" 
+                        android:background="@color/colorDivider"
+                        android:layout_marginHorizontal="12dp"/>
+
+                    <RadioButton
+                        android:id="@+id/radioThemeDark"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Dark"
+                        android:textSize="15sp"
+                        android:paddingVertical="10dp"
+                        android:buttonTint="@color/selector_radio_tint"
+                        android:textColor="?android:attr/textColorPrimary"/>
+
+                </RadioGroup>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Actions -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Actions"
+                android:textSize="12sp"
+                android:textAllCaps="true"
+                android:textColor="?android:attr/textColorSecondary"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="12dp"
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.05"/>
+
+            <TextView
+                android:id="@+id/btnResetData"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="?android:attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:paddingVertical="14dp"
+                android:paddingHorizontal="4dp"
+                android:text="Reset Data Usage"
+                android:textColor="?android:attr/textColorPrimary"
+                android:textSize="15sp"/>
+
+            <View 
+                android:layout_width="match_parent" 
+                android:layout_height="1dp" 
+                android:background="@color/colorDivider"
+                android:layout_marginVertical="4dp"/>
+
+            <TextView
+                android:id="@+id/btnStopExit"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="?android:attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:paddingVertical="14dp"
+                android:paddingHorizontal="4dp"
+                android:text="Stop and Exit"
+                android:textColor="#D32F2F"
+                android:textSize="15sp"/>
+            
+            <!-- Hidden Close Button (Removed from Bottom) -->
+            <TextView
+                android:id="@+id/btnClose"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:visibility="gone"/>
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
 
 </LinearLayout>

@@ -1,0 +1,70 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+
+    <!-- Green Arrow Background (White Outline) -->
+    <path
+        android:pathData="M30,5 L58,35 H44 V78 H16 V35 H2 Z"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="8"
+        android:strokeLineJoin="round"
+        android:fillColor="#FFFFFF"/>
+
+    <!-- Red Arrow Background (White Outline) -->
+    <path
+        android:pathData="M70,95 L42,65 H56 V22 H84 V65 H98 Z"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="8"
+        android:strokeLineJoin="round"
+        android:fillColor="#FFFFFF"/>
+
+    <!-- Green Arrow Foreground -->
+    <path
+        android:pathData="M30,5 L58,35 H44 V78 H16 V35 H2 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="30"
+                android:startY="5"
+                android:endX="30"
+                android:endY="78">
+                <item android:offset="0.0" android:color="#76FF03"/>
+                <item android:offset="1.0" android:color="#2E7D32"/>
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Green Arrow Inner Detail -->
+    <path
+        android:pathData="M30,12 L50,35 H40 V72 H20 V35 H10 Z"
+        android:strokeColor="#40FFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineJoin="round"/>
+
+    <!-- Red Arrow Foreground -->
+    <path
+        android:pathData="M70,95 L42,65 H56 V22 H84 V65 H98 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="70"
+                android:startY="22"
+                android:endX="70"
+                android:endY="95">
+                <item android:offset="0.0" android:color="#FF5252"/>
+                <item android:offset="1.0" android:color="#D50000"/>
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Red Arrow Inner Detail -->
+    <path
+        android:pathData="M70,88 L50,65 H60 V28 H80 V65 H90 Z"
+        android:strokeColor="#40FFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineJoin="round"/>
+
+</vector>

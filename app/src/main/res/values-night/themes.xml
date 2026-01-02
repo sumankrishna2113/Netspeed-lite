@@ -1,20 +1,64 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-
-    <style name="Base.Theme.DataUsageMeterLite" parent="Theme.Material3.DayNight.NoActionBar">
-
-        <item name="android:statusBarColor">#1A237E</item>
-
+    <!-- Base application theme (Dark Mode) -->
+    <style name="Base.Theme.DataUsagemeterlite" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Customize your dark theme here -->
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorOnPrimary">@color/textOnDark</item>
+        <item name="colorSecondary">@color/colorAccent</item>
+        <item name="colorOnSecondary">@color/textOnDark</item>
+        
+        <!-- Status Bar (Dark Mode) -->
+        <item name="android:statusBarColor">@color/colorBackground</item>
         <item name="android:windowLightStatusBar">false</item>
+        
+        <!-- Navigation Bar (Dark Mode) -->
+        <item name="android:navigationBarColor">@color/colorBackground</item>
+        <item name="android:windowLightNavigationBar">false</item>
 
-        <item name="actionOverflowButtonStyle">@style/WhiteOverflowButtonStyle</item>
+        <!-- Backgrounds -->
+        <item name="android:colorBackground">@color/colorBackground</item>
+        <item name="colorSurface">@color/colorSurface</item>
+        <item name="colorSurfaceVariant">@color/colorSurfaceElevated</item>
+        
+        <!-- Typography Colors -->
+        <item name="android:textColorPrimary">@color/textPrimary</item>
+        <item name="android:textColorSecondary">@color/textSecondary</item>
+        <item name="android:textColorTertiary">@color/textTertiary</item>
 
-        <item name="android:navigationBarColor">?android:attr/colorBackground</item>
+        <!-- Components -->
+        <item name="materialCardViewStyle">@style/Widget.App.CardView</item>
+        <item name="materialSwitchStyle">@style/Widget.App.Switch</item>
+        <item name="alertDialogTheme">@style/Theme.App.Dialog</item>
     </style>
 
-    <style name="WhiteOverflowButtonStyle" parent="Widget.AppCompat.ActionButton.Overflow">
-        <item name="android:tint">#FFFFFF</item>
+    <style name="Theme.DataUsagemeterlite" parent="Base.Theme.DataUsagemeterlite" />
+    
+    <!-- Custom Dialog Theme -->
+    <style name="Theme.App.Dialog" parent="Theme.Material3.DayNight.Dialog.Alert">
+        <item name="android:background">@drawable/bg_dialog_rounded</item>
+        <item name="colorSurface">@color/colorSurface</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:textColorPrimary">@color/textPrimary</item>
+        <item name="android:textColorSecondary">@color/textSecondary</item>
     </style>
 
-    <style name="Theme.DataUsageMeterLite" parent="Base.Theme.DataUsageMeterLite" />
+    <!-- Custom Card Style -->
+    <style name="Widget.App.CardView" parent="Widget.Material3.CardView.Elevated">
+        <item name="cardBackgroundColor">@color/colorSurface</item>
+        <item name="cardElevation">2dp</item>
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.App.MediumComponent</item>
+        <item name="strokeColor">@color/colorStroke</item>
+        <item name="strokeWidth">1dp</item>
+    </style>
+
+    <!-- Custom Switch Style -->
+    <style name="Widget.App.Switch" parent="Widget.Material3.CompoundButton.MaterialSwitch">
+        <item name="thumbTint">@color/selector_switch_thumb</item>
+        <item name="trackTint">@color/selector_switch_track</item>
+    </style>
+
+    <style name="ShapeAppearance.App.MediumComponent" parent="ShapeAppearance.Material3.MediumComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">16dp</item>
+    </style>
 </resources>

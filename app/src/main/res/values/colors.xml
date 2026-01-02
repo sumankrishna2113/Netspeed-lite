@@ -1,33 +1,57 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Refined Neutral Light Theme (System Quality) -->
+    
+    <!-- Surfaces -->
+    <color name="colorBackground">#F6F7FB</color> <!-- Material surfaceVariant style background -->
+    <color name="colorSurface">#FFFFFF</color>
+    <color name="colorSurfaceElevated">#F0F2F5</color>
+    
+    <!-- Primary / Brand (Muted) -->
+    <color name="colorPrimary">#E2E8F0</color> <!-- CHANGED: Darker Soft Grey Header -->
+    <color name="colorPrimaryDark">#1D4ED8</color>
+    <color name="colorAccent">#2563EB</color> 
+    
+    <!-- Sections -->
+    <color name="colorHeaderRow">#F1F5F9</color> <!-- Increased intensity for header differentiation -->
+    <color name="colorBottomBar">#FFFFFF</color>
 
-    <color name="colorBackground">#F3F5F7</color>
-
-    <color name="colorPrimary">#1A237E</color>
-    <color name="colorPrimaryDark">#000051</color>
-    <color name="colorAccent">#534BAE</color>
-
-    <color name="colorHeaderRow">#283593</color>
-    <color name="colorFooter">#1A237E</color>
-
-    <color name="colorDivider">#CFD8DC</color>
-
-    <color name="textPrimary">#263238</color>
-    <color name="textSecondary">#546E7A</color>
+    <!-- Text (Refined for Comfort) -->
+    <color name="textPrimary">#111827</color>  <!-- High contrast black -->
+    <color name="textSecondary">#4B5563</color> <!-- Balanced grey -->
+    <color name="textTertiary">#9CA3AF</color>  <!-- Muted Grey -->
     <color name="textOnDark">#FFFFFF</color>
-    <color name="toolbarGrey">#1A237E</color>
+    
+    <!-- App Bar Specific -->
+    <color name="appBarText">#111827</color>
+    <color name="toolbarGrey">#F6F7FB</color>
 
-    <!-- Pill Colors (Light Mode) -->
-    <color name="pillDateBg">#ECEFF1</color> <!-- Darker background -->
-    <color name="pillDateText">#263238</color> <!-- Darker text -->
-    
-    <color name="pillMobileBg">#E3F2FD</color>
-    <color name="pillMobileText">#1565C0</color>
-    
-    <color name="pillWifiBg">#E8F5E9</color>
-    <color name="pillWifiText">#2E7D32</color>
-    
-    <color name="pillTotalBg">#F3E5F5</color>
-    <color name="pillTotalText">#6A1B9A</color>
+    <!-- Data Values (Desaturated Calm Tones) -->
+    <color name="pillMobileText">#2563EB</color> <!-- Primary Blue -->
+    <color name="pillWifiText">#059669</color>   <!-- Forest Green -->
+    <color name="pillTotalText">#4B5563</color>  <!-- Neutral Total -->
 
+    <!-- Dividers & Strokes -->
+    <color name="colorDivider">#E5E7EB</color>
+    <color name="colorStroke">#D1D5DB</color>
+    
+    <!-- UI Controls (Explicit Definitions for Light Mode) -->
+    <color name="radio_button_unchecked_color">#9CA3AF</color> <!-- Polished Medium Grey -->
+    <color name="radio_button_checked_color">#2563EB</color>   <!-- Primary Blue -->
+    
+    <!-- FIX: Explicit switch track colors for Light Mode -->
+    <color name="switch_track_unchecked_color">#D1D5DB</color>
+    <color name="switch_thumb_color">#FFFFFF</color>
+    
+    <!-- ADDED: Explicit ON track color to prevent blending -->
+    <color name="control_switch_track_on">#2563EB</color>
+    <color name="control_switch_track_off">#D1D5DB</color>
+
+    <!-- Legacy / Unused -->
+    <color name="colorFooter">#FFFFFF</color>
+    <color name="pillDateBg">#00000000</color>
+    <color name="pillDateText">#111827</color>
+    <color name="pillMobileBg">#00000000</color>
+    <color name="pillWifiBg">#00000000</color>
+    <color name="pillTotalBg">#00000000</color>
 </resources>

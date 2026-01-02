@@ -2,73 +2,73 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:paddingVertical="8dp"
-    android:paddingHorizontal="8dp"
-    android:gravity="center_vertical">
+    android:orientation="vertical">
 
-    <!-- Date -->
-    <TextView
-        android:id="@+id/tvDate"
-        android:layout_width="0dp"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1.2"
-        android:gravity="center"
-        android:text="Jan 01"
-        android:paddingVertical="6dp"
-        android:paddingHorizontal="4dp"
-        android:background="@drawable/bg_rounded_value"
-        android:backgroundTint="@color/pillDateBg"
-        android:textColor="@color/pillDateText"
-        android:textSize="13sp"
-        android:layout_marginEnd="4dp"/>
+        android:orientation="horizontal"
+        android:paddingVertical="14dp"
+        android:paddingHorizontal="12dp"
+        android:gravity="center_vertical">
 
-    <!-- Mobile -->
-    <TextView
-        android:id="@+id/tvMobile"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:gravity="center"
-        android:text="0 MB"
-        android:paddingVertical="6dp"
-        android:paddingHorizontal="4dp"
-        android:background="@drawable/bg_rounded_value"
-        android:backgroundTint="@color/pillMobileBg"
-        android:textColor="@color/pillMobileText"
-        android:textSize="13sp"
-        android:layout_marginEnd="4dp"/>
+        <!-- Date -->
+        <TextView
+            android:id="@+id/tvDate"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1.2"
+            android:gravity="start|center_vertical"
+            android:text="Jan 01"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textSize="14sp"
+            android:fontFamily="sans-serif"
+            android:layout_marginEnd="4dp"/>
 
-    <!-- Wifi -->
-    <TextView
-        android:id="@+id/tvWifi"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:gravity="center"
-        android:text="0 MB"
-        android:paddingVertical="6dp"
-        android:paddingHorizontal="4dp"
-        android:background="@drawable/bg_rounded_value"
-        android:backgroundTint="@color/pillWifiBg"
-        android:textColor="@color/pillWifiText"
-        android:textSize="13sp"
-        android:layout_marginEnd="4dp"/>
+        <!-- Mobile -->
+        <TextView
+            android:id="@+id/tvMobile"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="0 MB"
+            android:textColor="@color/pillMobileText"
+            android:textSize="14sp"
+            android:fontFamily="sans-serif-medium"
+            android:layout_marginEnd="4dp"/>
 
-    <!-- Total -->
-    <TextView
-        android:id="@+id/tvTotal"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:gravity="center"
-        android:text="0 MB"
-        android:paddingVertical="6dp"
-        android:paddingHorizontal="4dp"
-        android:background="@drawable/bg_rounded_value"
-        android:backgroundTint="@color/pillTotalBg"
-        android:textColor="@color/pillTotalText"
-        android:textSize="13sp"
-        android:textStyle="bold" />
+        <!-- Wifi -->
+        <TextView
+            android:id="@+id/tvWifi"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="0 MB"
+            android:textColor="@color/pillWifiText"
+            android:textSize="14sp"
+            android:fontFamily="sans-serif-medium"
+            android:layout_marginEnd="4dp"/>
+
+        <!-- Total -->
+        <TextView
+            android:id="@+id/tvTotal"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="0 MB"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textSize="14sp"
+            android:fontFamily="sans-serif-medium" />
+
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#12FFFFFF"
+        android:layout_marginHorizontal="16dp"/>
 
 </LinearLayout>
