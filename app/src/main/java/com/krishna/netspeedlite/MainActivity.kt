@@ -4,6 +4,7 @@ import android.app.AppOpsManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.app.usage.NetworkStats
 import android.app.usage.NetworkStatsManager
 import android.content.ActivityNotFoundException
 import android.content.Context
@@ -25,7 +26,6 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
-import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.TextView
 import android.widget.Toast
@@ -36,7 +36,6 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.GravityCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.materialswitch.MaterialSwitch
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.play.core.review.ReviewManagerFactory
@@ -98,7 +97,7 @@ class MainActivity : AppCompatActivity() {
         if (showSpeed) {
             startSpeedService()
         }
-        
+
         recordAppOpen()
     }
 
@@ -106,7 +105,7 @@ class MainActivity : AppCompatActivity() {
         try {
             val themeMode = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
             if (AppCompatDelegate.getDefaultNightMode() != themeMode) {
-                 AppCompatDelegate.setDefaultNightMode(themeMode)
+                AppCompatDelegate.setDefaultNightMode(themeMode)
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -215,7 +214,7 @@ class MainActivity : AppCompatActivity() {
         val etDataLimit = navView.findViewById<TextInputEditText>(R.id.etDataLimit) ?: return
         val tvUnitSelection = navView.findViewById<AutoCompleteTextView>(R.id.tvUnitSelection) ?: return
         val tvLimitError = navView.findViewById<TextView>(R.id.tvLimitError) ?: return
-        
+
         val radioGroupTheme = navView.findViewById<RadioGroup>(R.id.radioGroupTheme) ?: return
 
         val units = arrayOf("MB", "GB")
@@ -225,11 +224,11 @@ class MainActivity : AppCompatActivity() {
         switchShowSpeed.isChecked = prefs.getBoolean("show_speed", true)
         switchShowUpDown.isChecked = prefs.getBoolean("show_up_down", false)
         switchShowWifiSignal.isChecked = prefs.getBoolean("show_wifi_signal", false)
-        
+
         val isAlertEnabled = prefs.getBoolean("daily_limit_enabled", false)
         switchDataAlert.isChecked = isAlertEnabled
         layoutDataLimitOptions.visibility = if (isAlertEnabled) View.VISIBLE else View.GONE
-        
+
         val savedUnit = prefs.getString("selected_unit", "MB") ?: "MB"
         tvUnitSelection.setText(savedUnit, false)
 
@@ -241,7 +240,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         radioGroupTheme.setOnCheckedChangeListener(null)
-        
+
         val currentTheme = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
         when (currentTheme) {
             AppCompatDelegate.MODE_NIGHT_NO -> radioGroupTheme.check(R.id.radioThemeLight)
@@ -288,7 +287,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             tvLimitError.visibility = View.GONE
-            
+
             val limitMb = if (unit == "GB") rawValue * 1024f else rawValue
 
             prefs.edit()
@@ -304,15 +303,15 @@ class MainActivity : AppCompatActivity() {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
-        
+
         etDataLimit.setOnFocusChangeListener { _, hasFocus ->
             if (!hasFocus) {
                 checkDataAlerts()
             }
         }
 
-        tvUnitSelection.setOnItemClickListener { _, _, _, _ -> 
-            saveLimit() 
+        tvUnitSelection.setOnItemClickListener { _, _, _, _ ->
+            saveLimit()
             checkDataAlerts()
         }
 
@@ -322,7 +321,7 @@ class MainActivity : AppCompatActivity() {
                 R.id.radioThemeDark -> AppCompatDelegate.MODE_NIGHT_YES
                 else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
             }
-            
+
             if (prefs.getInt("theme_mode", -100) != mode) {
                 prefs.edit().putInt("theme_mode", mode).apply()
                 group.post { AppCompatDelegate.setDefaultNightMode(mode) }
@@ -340,7 +339,7 @@ class MainActivity : AppCompatActivity() {
             stopService(Intent(this, SpeedService::class.java))
             finishAffinity()
         }
-        
+
         btnClose.setOnClickListener {
             binding.drawerLayout.closeDrawer(GravityCompat.END)
         }
@@ -402,7 +401,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-    
+
     private fun getTodayMobileUsage(): Long {
         val calendar = Calendar.getInstance()
         calendar.set(Calendar.HOUR_OF_DAY, 0)
@@ -410,10 +409,10 @@ class MainActivity : AppCompatActivity() {
         calendar.set(Calendar.SECOND, 0)
         val startTime = calendar.timeInMillis
         val endTime = System.currentTimeMillis()
-        
+
         val resetTimestamp = prefs.getLong("reset_timestamp", 0L)
         val queryStartTime = if (startTime < resetTimestamp) resetTimestamp else startTime
-        
+
         if (endTime <= resetTimestamp) return 0L
 
         return getUsage(ConnectivityManager.TYPE_MOBILE, queryStartTime, endTime)
@@ -446,18 +445,18 @@ class MainActivity : AppCompatActivity() {
 
             withContext(Dispatchers.Main) {
                 if (!alert100 && usageMb >= limitMb) {
-                    showNotification("Daily Limit Reached", 
+                    showNotification("Daily Limit Reached",
                         "You have reached your daily limit of ${String.format(Locale.US, "%.0f", limitMb)} MB.")
                     prefs.edit().putBoolean("alert_100_triggered", true).apply()
                 } else if (!alert80 && !alert100 && usageMb >= (limitMb * 0.8)) {
-                    showNotification("Daily Limit Warning", 
+                    showNotification("Daily Limit Warning",
                         "You have used 80% of your daily limit (${String.format(Locale.US, "%.1f", usageMb)} MB).")
                     prefs.edit().putBoolean("alert_80_triggered", true).apply()
                 }
             }
         }
     }
-    
+
     private fun showNotification(title: String, message: String) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
@@ -485,7 +484,7 @@ class MainActivity : AppCompatActivity() {
             e.printStackTrace()
         }
     }
-    
+
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val name = "Data Usage Alerts"
@@ -516,18 +515,31 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * ⭐ FIXED FUNCTION: Uses querySummary (with bucket iteration) + Sanity Check
+     * Replaces broken querySummaryForDevice.
+     */
     private fun getUsage(networkType: Int, startTime: Long, endTime: Long): Long {
-        return try {
-            val bucket = networkStatsManager.querySummaryForDevice(
-                networkType,
-                null,
-                startTime,
-                endTime
-            )
-            bucket.rxBytes + bucket.txBytes
+        var totalBytes = 0L
+        try {
+            val bucket = NetworkStats.Bucket()
+            // USE querySummary to iterate over buckets
+            val networkStats = networkStatsManager.querySummary(networkType, null, startTime, endTime)
+
+            while (networkStats.hasNextBucket()) {
+                networkStats.getNextBucket(bucket)
+                val bytes = bucket.rxBytes + bucket.txBytes
+
+                // 🛡️ SANITY CHECK: Filter out Garbage Data (anything > 100 TB is a glitch)
+                if (bytes > 0 && bytes < 100L * 1024 * 1024 * 1024 * 1024) {
+                    totalBytes += bytes
+                }
+            }
+            networkStats.close()
         } catch (e: Exception) {
-            0L
+            e.printStackTrace()
         }
+        return totalBytes
     }
 
     private fun formatData(bytes: Long): String {
@@ -543,19 +555,19 @@ class MainActivity : AppCompatActivity() {
             else -> "$bytes B"
         }
     }
-    
+
     private fun recordAppOpen() {
         val openCount = prefs.getInt("app_open_count", 0) + 1
         prefs.edit().putInt("app_open_count", openCount).apply()
     }
-    
+
     private fun showRateUsFlow() {
         val manager = ReviewManagerFactory.create(this)
         val openCount = prefs.getInt("app_open_count", 0)
         val lastReview = prefs.getLong("last_review_prompt", 0L)
-        
-        val isEligible = openCount >= 5 && 
-                         (lastReview == 0L || System.currentTimeMillis() - lastReview > TimeUnit.DAYS.toMillis(30))
+
+        val isEligible = openCount >= 5 &&
+                (lastReview == 0L || System.currentTimeMillis() - lastReview > TimeUnit.DAYS.toMillis(30))
 
         if (isEligible) {
             val request = manager.requestReviewFlow()
