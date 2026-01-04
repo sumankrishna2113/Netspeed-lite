@@ -8,7 +8,7 @@
         <item name="colorOnSecondary">@color/textOnDark</item>
         
         <!-- Status Bar (Light Mode Fix) -->
-        <item name="android:statusBarColor">@color/colorBackground</item>
+        <item name="android:statusBarColor">@color/colorSurface</item>
         <item name="android:windowLightStatusBar">true</item>
         
         <!-- Navigation Bar (Light Mode Fix) -->

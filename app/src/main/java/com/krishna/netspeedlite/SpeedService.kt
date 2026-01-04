@@ -40,9 +40,12 @@ class SpeedService : Service() {
     private val interval = 1000L
     private var tickCount = 0
 
-    private val channelId = "speed_channel_v5"
+    // Updated channel ID to force re-creation with no-badge settings
+    private val channelId = "speed_channel_v7"
     private val alertChannelId = "data_alert_channel"
     private val notificationId = 1
+    
+    // Fixed timestamp to prevent notification sorting jumps
     private val serviceStartTime = System.currentTimeMillis()
 
     private lateinit var prefs: SharedPreferences
@@ -105,7 +108,6 @@ class SpeedService : Service() {
 
             val limitBytes = (limitMb * 1024 * 1024).toLong()
 
-            // ✅ USE THE HELPER HERE
             val (mobileUsage, _) = NetworkUsageHelper.getUsageForDate(applicationContext, System.currentTimeMillis())
 
             val percentage = (mobileUsage.toDouble() / limitBytes.toDouble()) * 100
@@ -147,8 +149,6 @@ class SpeedService : Service() {
         val details = StringBuilder()
 
         if (hasUsageStatsPermission()) {
-            // ✅ USE THE HELPER HERE FOR NOTIFICATION TEXT TOO
-            // Running on main thread is okay for lightweight Helper logic
             val (mobile, wifi) = NetworkUsageHelper.getUsageForDate(this, System.currentTimeMillis())
             details.append("Mobile: ${formatUsage(mobile)} | WiFi: ${formatUsage(wifi)}")
         } else {
@@ -214,11 +214,17 @@ class SpeedService : Service() {
             .setContentTitle(title)
             .setContentText(details)
             .setOngoing(true)
+            .setAutoCancel(false) // Fix: Prevent implicit cancellation
+            .setNumber(0) // Fix: Explicitly set count to 0
+            .setBadgeIconType(NotificationCompat.BADGE_ICON_NONE) // Fix: Do not show badge icon
             .setSilent(true)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .setContentIntent(getOpenAppIntent())
             .setOnlyAlertOnce(true)
             .setVisibility(NotificationCompat.VISIBILITY_SECRET)
+            .setWhen(serviceStartTime)
+            .setShowWhen(false)
             .build()
     }
 
@@ -249,9 +255,10 @@ class SpeedService : Service() {
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(channelId, "Internet Speed", NotificationManager.IMPORTANCE_DEFAULT)
+            val channel = NotificationChannel(channelId, "Internet Speed", NotificationManager.IMPORTANCE_LOW)
             channel.setSound(null, null)
             channel.enableVibration(false)
+            channel.setShowBadge(false) // Fix: Explicitly disable notification dot/badge
             channel.lockscreenVisibility = Notification.VISIBILITY_SECRET
             getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
         }
