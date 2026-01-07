@@ -44,7 +44,7 @@ class SpeedService : Service() {
     private val channelId = Constants.SPEED_CHANNEL_ID
     private val alertChannelId = Constants.ALERT_CHANNEL_ID
     private val notificationId = Constants.NOTIFICATION_ID
-    
+
     private val serviceStartTime = System.currentTimeMillis()
 
     private lateinit var prefs: SharedPreferences
@@ -56,35 +56,35 @@ class SpeedService : Service() {
         try {
             val density = resources?.displayMetrics?.density ?: 2.0f
             val baseDp = 64 // Use 64dp as base for large notification icons (Android guideline)
-            
+
             // Convert dp to pixels using device density
             // This ensures proper scaling across all screen densities:
             // MDPI (1.0x): 64px, HDPI (1.5x): 96px, XHDPI (2.0x): 128px
             // XXHDPI (3.0x): 192px, XXXHDPI (4.0x): 256px
             val baseSize = (baseDp * density).toInt()
-            
+
             // Apply manufacturer-specific adjustments as multipliers (not fixed values)
             // This maintains density independence while accounting for rendering differences
             val manufacturer = Build.MANUFACTURER.lowercase(Locale.ROOT)
             val adjustmentFactor = when {
                 manufacturer.contains("samsung") -> 1.1f  // Samsung devices benefit from slightly larger icons
-                
+
                 // OnePlus and Vivo devices need significantly larger icons to display properly
                 manufacturer.contains("oneplus") -> 1.5f  // Increased from 1.2f for better visibility
                 manufacturer.contains("vivo") -> 1.5f     // Increased from 1.2f for better visibility
                 manufacturer.contains("oppo") -> 1.4f    // Slightly less than OnePlus/Vivo
                 manufacturer.contains("realme") -> 1.4f  // Slightly less than OnePlus/Vivo
-                
+
                 manufacturer.contains("xiaomi") ||
-                manufacturer.contains("redmi") ||
-                manufacturer.contains("poco") -> 1.15f
-                
+                        manufacturer.contains("redmi") ||
+                        manufacturer.contains("poco") -> 1.15f
+
                 else -> 1.0f
             }
-            
+
             // Calculate adjusted size
             val adjustedSize = (baseSize * adjustmentFactor).toInt()
-            
+
             // For OnePlus and Vivo, ensure minimum size is larger to prevent small icons
             // Ensure reasonable bounds: minimum 64px (1x MDPI), maximum 600px (increased for OnePlus/Vivo)
             val finalSize = if (manufacturer.contains("oneplus") || manufacturer.contains("vivo")) {
@@ -92,9 +92,9 @@ class SpeedService : Service() {
             } else {
                 adjustedSize.coerceIn(64, 512)
             }
-            
+
             android.util.Log.d("SpeedService", "Icon size calculation: manufacturer=$manufacturer, density=$density, baseSize=$baseSize, adjustmentFactor=$adjustmentFactor, finalSize=$finalSize")
-            
+
             finalSize
         } catch (e: Exception) {
             android.util.Log.e("SpeedService", "Error calculating optimal icon size", e)
@@ -142,14 +142,25 @@ class SpeedService : Service() {
         lastTx = if (initialTx == -1L) 0L else initialTx
 
         val notification = buildNotification("Initializing...", "0", "KB/s", "Starting...")
-        
-        // Pass foregroundServiceType to support Android 14+
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) { // Use UPSIDE_DOWN_CAKE for API 34
-             startForeground(notificationId, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
-        } else {
-             startForeground(notificationId, notification)
+
+        try {
+            // Pass foregroundServiceType to support Android 14+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) { // Use UPSIDE_DOWN_CAKE for API 34
+                startForeground(notificationId, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+            } else {
+                startForeground(notificationId, notification)
+            }
+        } catch (e: Exception) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && e is android.app.ForegroundServiceStartNotAllowedException) {
+                android.util.Log.e("SpeedService", "Foreground service start not allowed", e)
+                stopSelf()
+            } else {
+                // Log other exceptions but don't crash if possible, or rethrow
+                android.util.Log.e("SpeedService", "Error starting foreground service", e)
+                stopSelf() // Safer to stop service than crash
+            }
         }
-        
+
         handler.post(runnable)
     }
 
@@ -224,7 +235,7 @@ class SpeedService : Service() {
     private suspend fun updateNotificationDataSuspend() = withContext(Dispatchers.IO) {
         val rx = TrafficStats.getTotalRxBytes()
         val tx = TrafficStats.getTotalTxBytes()
-        
+
         // Handle TrafficStats reset or unavailable (-1)
         // If stats reset or are unavailable, use 0 to avoid negative or huge values
         val rxDelta = if (rx == -1L || lastRx == -1L || rx < lastRx) {
@@ -232,13 +243,13 @@ class SpeedService : Service() {
         } else {
             rx - lastRx
         }
-        
+
         val txDelta = if (tx == -1L || lastTx == -1L || tx < lastTx) {
             0L // Stats reset or unavailable
         } else {
             tx - lastTx
         }
-        
+
         val totalBytes = rxDelta + txDelta
 
         // Only update if values are valid
@@ -356,20 +367,20 @@ class SpeedService : Service() {
         // Check cache
         val cacheKey = "$speed|$unit"
         iconCache[cacheKey]?.let { return it }
-        
+
         // Fix: LRU cache automatically removes eldest entries when size exceeds limit
         // No need to manually clear the entire cache
-        
+
         val size = optimalIconSize
-        
+
         // Check if device is OnePlus or Vivo for additional adjustments
         val manufacturer = Build.MANUFACTURER.lowercase(Locale.ROOT)
         val isOnePlusOrVivo = manufacturer.contains("oneplus") || manufacturer.contains("vivo")
-        
+
         try {
             val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bitmap)
-            
+
             // ===== KEY FIX: Use higher quality settings =====
             val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = Color.WHITE
@@ -382,11 +393,11 @@ class SpeedService : Service() {
                     isLinearText = false  // Use subpixel rendering when available
                 }
             }
-            
+
             // Adjust text size proportions for OnePlus/Vivo to ensure visibility
             val speedTextSizeMultiplier = if (isOnePlusOrVivo) 0.75f else 0.72f
             val unitTextSizeMultiplier = if (isOnePlusOrVivo) 0.40f else 0.38f
-            
+
             // Keep your original proportions - adjusted for OnePlus/Vivo
             paint.textSize = size * speedTextSizeMultiplier
             val textWidth = paint.measureText(speed)
@@ -394,14 +405,14 @@ class SpeedService : Service() {
                 paint.textScaleX = (size * 0.94f) / textWidth
             }
             canvas.drawText(speed, size / 2f, size * 0.58f, paint)
-            
+
             paint.textScaleX = 1.0f
             paint.textSize = size * unitTextSizeMultiplier
             canvas.drawText(unit, size / 2f, size * 0.95f, paint)
-            
+
             val iconCompat = IconCompat.createWithBitmap(bitmap)
             iconCache[cacheKey] = iconCompat
-            
+
             return iconCompat
         } catch (e: Exception) {
             android.util.Log.e("SpeedService", "Error creating speed icon", e)

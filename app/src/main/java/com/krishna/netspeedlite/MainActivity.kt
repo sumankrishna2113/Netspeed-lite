@@ -68,7 +68,7 @@ class MainActivity : AppCompatActivity() {
             checkAlertsHandler.postDelayed(this, Constants.ALERT_CHECK_INTERVAL_MS)
         }
     }
-    
+
     // Store battery optimization runnable to prevent memory leak
     private var batteryOptRunnable: Runnable? = null
 
@@ -107,7 +107,7 @@ class MainActivity : AppCompatActivity() {
 
         // Reset dismissed flag on app start so prompt can show again in new session
         prefs.edit().putBoolean(Constants.PREF_BATTERY_OPT_DISMISSED, false).apply()
-        
+
         checkBatteryOptimization()
         recordAppOpen()
 
@@ -129,14 +129,14 @@ class MainActivity : AppCompatActivity() {
     private fun checkBatteryOptimization() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val powerManager = getSystemService(Context.POWER_SERVICE) as? PowerManager ?: return
-            
+
             // Only prompt if not ignoring and we haven't asked before
             if (!powerManager.isIgnoringBatteryOptimizations(packageName) &&
                 !prefs.getBoolean(Constants.PREF_BATTERY_OPT_ASKED, false)) {
-                
+
                 // Cancel any existing runnable to prevent duplicates
                 batteryOptRunnable?.let { binding.root.removeCallbacks(it) }
-                
+
                 // Delay the prompt to not interrupt user flow - show after 3 seconds
                 // This gives users time to see the app first
                 batteryOptRunnable = Runnable {
@@ -149,7 +149,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-    
+
     private fun showBatteryOptimizationDialog() {
         try {
             val dialogView = layoutInflater.inflate(R.layout.dialog_battery_optimization, null)
@@ -243,7 +243,11 @@ class MainActivity : AppCompatActivity() {
     private fun startSpeedService() {
         val intent = Intent(this, SpeedService::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(intent)
+            try {
+                startForegroundService(intent)
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Failed to start foreground service", e)
+            }
         } else {
             startService(intent)
         }
@@ -281,13 +285,13 @@ class MainActivity : AppCompatActivity() {
         super.onPause()
         checkAlertsHandler.removeCallbacks(checkAlertsRunnable)
     }
-    
+
     override fun onDestroy() {
         super.onDestroy()
         // Fix memory leak: Cancel battery optimization runnable
         batteryOptRunnable?.let { binding.root.removeCallbacks(it) }
         batteryOptRunnable = null
-        
+
         // Fix memory leak: Clean up handler callbacks
         checkAlertsHandler.removeCallbacksAndMessages(null)
     }
@@ -306,7 +310,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-    
+
     private fun showPermissionDialog() {
         try {
             val dialogView = layoutInflater.inflate(R.layout.dialog_permission, null)
@@ -666,7 +670,7 @@ class MainActivity : AppCompatActivity() {
             // SpeedService is running, let it handle alerts
             return
         }
-        
+
         // Only check alerts if SpeedService is not running
         val isEnabled = prefs.getBoolean(Constants.PREF_DAILY_LIMIT_ENABLED, false)
         if (!isEnabled) return
@@ -774,14 +778,14 @@ class MainActivity : AppCompatActivity() {
      */
     private fun getUsage(networkType: Int, startTime: Long, endTime: Long): Long {
         if (networkStatsManager == null) return 0L
-        
+
         var totalBytes = 0L
         var networkStats: NetworkStats? = null
         try {
             val bucket = NetworkStats.Bucket()
             // USE querySummary to iterate over buckets
             networkStats = networkStatsManager?.querySummary(networkType, null, startTime, endTime)
-            
+
             // Fix: Add null check for querySummary result
             if (networkStats == null) {
                 Log.w("MainActivity", "querySummary returned null for networkType: $networkType")
