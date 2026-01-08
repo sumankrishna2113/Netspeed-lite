@@ -13,7 +13,7 @@ object Constants {
     const val PREF_THEME_MODE = "theme_mode"
     const val PREF_SHOW_SPEED = "show_speed"
     const val PREF_SELECTED_UNIT = "selected_unit"
-    const val PREF_RESET_TIMESTAMP = "reset_timestamp"
+
     const val PREF_UNIT_IN_MB = "unit_in_mb"
     const val PREF_APP_OPEN_COUNT = "app_open_count"
     const val PREF_LAST_REVIEW_PROMPT = "last_review_prompt"

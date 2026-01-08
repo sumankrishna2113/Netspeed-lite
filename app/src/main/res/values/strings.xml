@@ -25,33 +25,30 @@
     <string name="open_settings">Open Settings</string>
     <string name="not_now">Not Now</string>
     <string name="dont_show_again">Don\'t Show Again</string>
-    
+
     <!-- Content Descriptions -->
     <string name="app_logo">Netspeed Lite App Logo</string>
     <string name="star_icon">Rate Us Star Icon</string>
     <string name="chevron_icon">Navigation Chevron</string>
-    
+
     <!-- Notification Messages -->
     <string name="daily_limit_reached">Daily Limit Reached</string>
     <string name="daily_limit_warning">Daily Limit Warning</string>
     <string name="limit_reached_message">You have reached your daily limit of %1$s MB.</string>
     <string name="limit_warning_message">You have used 80%% of your daily limit (%1$s MB).</string>
-    
+
     <!-- Error Messages -->
     <string name="error_loading_data">Unable to load data. Please check your permissions.</string>
     <string name="error_network_stats">Network statistics unavailable. Please try again later.</string>
     <string name="loading_data">Loading data usage…</string>
-    
+
     <!-- Confirmation Dialogs -->
-    <string name="confirm_reset_title">Reset Data Usage?</string>
-    <string name="confirm_reset_message">This will reset all your data usage statistics. This action cannot be undone.</string>
-    <string name="confirm_reset">Reset</string>
-    <string name="cancel">Cancel</string>
-    
     <string name="confirm_stop_exit_title">Stop and Exit?</string>
     <string name="confirm_stop_exit_message">This will stop the speed monitoring service and close the app.</string>
     <string name="stop_and_exit">Stop &amp; Exit</string>
-    
+    <string name="cancel">Cancel</string>
+
+
     <!-- Permission Messages -->
     <string name="permission_explanation">Netspeed Lite needs Usage Access permission to monitor your data usage. This permission allows the app to read network statistics.</string>
     <string name="permission_required">Permission Required</string>

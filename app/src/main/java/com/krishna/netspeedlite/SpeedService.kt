@@ -159,6 +159,7 @@ class SpeedService : Service() {
                 android.util.Log.e("SpeedService", "Error starting foreground service", e)
                 stopSelf() // Safer to stop service than crash
             }
+            return // Prevent further initialization if functionality failed
         }
 
         handler.post(runnable)
@@ -236,23 +237,32 @@ class SpeedService : Service() {
         val rx = TrafficStats.getTotalRxBytes()
         val tx = TrafficStats.getTotalTxBytes()
 
-        // Handle TrafficStats reset or unavailable (-1)
-        // If stats reset or are unavailable, use 0 to avoid negative or huge values
-        val rxDelta = if (rx == -1L || lastRx == -1L || rx < lastRx) {
-            0L // Stats reset or unavailable
+        // Detect TrafficStats reset (e.g. reboot, airplane mode toggle, or overflow)
+        // If current stats are LESS than previous, it means the counter reset.
+        // In that case, we can't calculate a delta for *this* second, but we MUST
+        // update lastRx/lastTx to the new lower value so the *next* second is correct.
+        val rxDelta = if (rx == -1L || lastRx == -1L) {
+            0L
+        } else if (rx < lastRx) {
+            // Counter reset: Don't show confusing large negative/positive spike.
+            // Just treat this tick as 0 and re-sync baseline.
+            0L
         } else {
             rx - lastRx
         }
 
-        val txDelta = if (tx == -1L || lastTx == -1L || tx < lastTx) {
-            0L // Stats reset or unavailable
+        val txDelta = if (tx == -1L || lastTx == -1L) {
+            0L
+        } else if (tx < lastTx) {
+            0L
         } else {
             tx - lastTx
         }
 
         val totalBytes = rxDelta + txDelta
 
-        // Only update if values are valid
+        // Always update baseline for next tick (unless unavailable)
+        // This is crucial: if rx < lastRx (reset), we MUST update lastRx to the new smaller rx
         if (rx != -1L) lastRx = rx
         if (tx != -1L) lastTx = tx
 
@@ -279,7 +289,12 @@ class SpeedService : Service() {
 
         // Post notification update back to the Main thread (or directly if NotificationManager is thread-safe, which it is)
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
-        manager?.notify(notificationId, notification)
+        try {
+            manager?.notify(notificationId, notification)
+        } catch (e: Exception) {
+            // Catch sporadic SecurityException or "TransactionTooLargeException" on some devices
+            android.util.Log.e("SpeedService", "Error updating notification", e)
+        }
     }
 
     // --- Helpers ---

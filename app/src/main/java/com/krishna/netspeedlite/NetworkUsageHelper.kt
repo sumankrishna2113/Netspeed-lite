@@ -30,7 +30,21 @@ object NetworkUsageHelper {
         calendar.set(Calendar.MILLISECOND, 999)
         val endTime = calendar.timeInMillis
 
-        // 2. Get Data
+        // 3. Get Data
+        val mobile = getSafeUsage(statsManager, ConnectivityManager.TYPE_MOBILE, startTime, endTime)
+        val wifi = getSafeUsage(statsManager, ConnectivityManager.TYPE_WIFI, startTime, endTime)
+
+        return Pair(mobile, wifi)
+    }
+
+    /**
+     * Generic method to get usage for a specific time range.
+     * Useful for custom ranges (e.g., in MainActivity).
+     */
+    fun getUsageInRange(context: Context, startTime: Long, endTime: Long): Pair<Long, Long> {
+        val statsManager = context.getSystemService(Context.NETWORK_STATS_SERVICE) as? NetworkStatsManager
+            ?: return Pair(0L, 0L)
+
         val mobile = getSafeUsage(statsManager, ConnectivityManager.TYPE_MOBILE, startTime, endTime)
         val wifi = getSafeUsage(statsManager, ConnectivityManager.TYPE_WIFI, startTime, endTime)
 
@@ -41,22 +55,30 @@ object NetworkUsageHelper {
         var totalBytes = 0L
         var networkStats: NetworkStats? = null
         try {
-            // Use querySummary to iterate over buckets (Fixes 0 Data bug)
+            // Use querySummary to iterate over buckets
             networkStats = manager.querySummary(networkType, null, start, end)
-            
-            // Fix: Add null check for querySummary result
+
             if (networkStats == null) {
                 android.util.Log.w("NetworkUsageHelper", "querySummary returned null for networkType: $networkType")
                 return 0L
             }
-            
+
             val bucket = NetworkStats.Bucket()
 
             while (networkStats.hasNextBucket()) {
                 networkStats.getNextBucket(bucket)
+
+                // 🛡️ CRITICAL FIX: Strictly filter buckets by time.
+                // NetworkStatsManager might return buckets that *overlap* the start time.
+                // If a bucket started BEFORE our 'resetTimestamp' (which is passed as 'start'),
+                // we must IGNORE it, otherwise the user sees old data immediately after reset.
+                if (bucket.startTimeStamp < start) {
+                    continue
+                }
+
                 val bytes = bucket.rxBytes + bucket.txBytes
 
-                // 🛡️ FIX: Filter out negative values or impossible spikes (Garbage Data)
+                // Filter out negative values or impossible spikes
                 if (bytes < 0) continue
                 if (bytes > SANITY_THRESHOLD) continue
 

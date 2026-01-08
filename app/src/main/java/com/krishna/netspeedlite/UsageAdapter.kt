@@ -13,7 +13,7 @@ class UsageAdapter(private var usageList: List<DailyUsage> = emptyList()) :
     RecyclerView.Adapter<UsageAdapter.UsageViewHolder>() {
 
     class UsageViewHolder(val binding: ItemUsageRowBinding) : RecyclerView.ViewHolder(binding.root)
-    
+
     // Cache SimpleDateFormat to avoid recreating on every bind
     private val dateFormat = SimpleDateFormat("dd MMM, yyyy", Locale.US)
 
@@ -27,7 +27,7 @@ class UsageAdapter(private var usageList: List<DailyUsage> = emptyList()) :
         if (position < 0 || position >= usageList.size) {
             return
         }
-        
+
         try {
             val item = usageList[position]
             val context = holder.itemView.context
@@ -49,6 +49,8 @@ class UsageAdapter(private var usageList: List<DailyUsage> = emptyList()) :
     override fun getItemCount() = usageList.size
 
     fun updateData(newList: List<DailyUsage>) {
+        // Prevent flickering: only update if data actually changed
+        if (usageList == newList) return
         usageList = newList
         notifyDataSetChanged()
     }

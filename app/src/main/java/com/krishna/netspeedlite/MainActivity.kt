@@ -61,6 +61,19 @@ class MainActivity : AppCompatActivity() {
     private lateinit var prefs: SharedPreferences
     private lateinit var usageAdapter: UsageAdapter
 
+    // Auto-refresh timer for "Live" updates in the app
+    private val refreshHandler = Handler(Looper.getMainLooper())
+    private var isRefreshing = false
+    private val refreshRunnable = object : Runnable {
+        override fun run() {
+            if (!isRefreshing) {
+                refreshData()
+            }
+            // Schedule next refresh in 5 seconds
+            refreshHandler.postDelayed(this, 5000)
+        }
+    }
+
     private val checkAlertsHandler = Handler(Looper.getMainLooper())
     private val checkAlertsRunnable = object : Runnable {
         override fun run() {
@@ -270,9 +283,13 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+
+        // Start auto-refresh
+        refreshHandler.post(refreshRunnable)
+
         if (hasUsageStatsPermission()) {
             binding.btnPermission.visibility = View.GONE
-            refreshData()
+            // refreshData() // Removed: refreshRunnable handles immediate call
             checkDataAlerts()
             checkAlertsHandler.removeCallbacks(checkAlertsRunnable)
             checkAlertsHandler.post(checkAlertsRunnable)
@@ -284,6 +301,9 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         checkAlertsHandler.removeCallbacks(checkAlertsRunnable)
+
+        // Stop auto-refresh to save battery
+        refreshHandler.removeCallbacks(refreshRunnable)
     }
 
     override fun onDestroy() {
@@ -393,7 +413,6 @@ class MainActivity : AppCompatActivity() {
         val switchShowSpeed = navView.findViewById<MaterialSwitch>(R.id.switchShowSpeed)
         val switchShowUpDown = navView.findViewById<MaterialSwitch>(R.id.switchShowUpDown)
         val switchShowWifiSignal = navView.findViewById<MaterialSwitch>(R.id.switchShowWifiSignal)
-        val btnResetData = navView.findViewById<TextView>(R.id.btnResetData)
         val btnStopExit = navView.findViewById<TextView>(R.id.btnStopExit)
         val btnClose = navView.findViewById<TextView>(R.id.btnClose)
         val btnRateUs = navView.findViewById<View>(R.id.btnRateUs)
@@ -408,7 +427,7 @@ class MainActivity : AppCompatActivity() {
 
         // Validate critical views exist
         if (switchShowSpeed == null || switchShowUpDown == null || switchShowWifiSignal == null ||
-            btnResetData == null || btnStopExit == null || btnClose == null || btnRateUs == null ||
+            btnStopExit == null || btnClose == null || btnRateUs == null ||
             switchDataAlert == null || layoutDataLimitOptions == null || etDataLimit == null ||
             tvUnitSelection == null || tvLimitError == null || radioGroupTheme == null) {
             Log.e("MainActivity", "Critical views not found in side panel, setup incomplete")
@@ -526,20 +545,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        btnResetData.setOnClickListener {
-            // Show confirmation dialog before resetting
-            androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle(getString(R.string.confirm_reset_title))
-                .setMessage(getString(R.string.confirm_reset_message))
-                .setPositiveButton(getString(R.string.confirm_reset)) { _, _ ->
-                    prefs.edit().putLong(Constants.PREF_RESET_TIMESTAMP, System.currentTimeMillis()).apply()
-                    Toast.makeText(this, getString(R.string.data_usage_reset), Toast.LENGTH_SHORT).show()
-                    refreshData()
-                    binding.drawerLayout.closeDrawer(GravityCompat.END)
-                }
-                .setNegativeButton(getString(R.string.cancel), null)
-                .show()
-        }
+
 
         btnStopExit.setOnClickListener {
             // Show confirmation dialog before stopping
@@ -572,6 +578,9 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
+        if (isRefreshing) return
+        isRefreshing = true
+
         // Hide permission button if visible
         binding.btnPermission.visibility = View.GONE
 
@@ -579,7 +588,6 @@ class MainActivity : AppCompatActivity() {
             try {
                 val usageList = ArrayList<DailyUsage>()
                 val calendar = Calendar.getInstance()
-                val resetTimestamp = prefs.getLong(Constants.PREF_RESET_TIMESTAMP, 0L)
 
                 var totalMobile = 0L
                 var totalWifi = 0L
@@ -598,15 +606,9 @@ class MainActivity : AppCompatActivity() {
                         calendar.set(Calendar.SECOND, 59)
                         val endTime = calendar.timeInMillis
 
-                        val queryStartTime = if (startTime < resetTimestamp) resetTimestamp else startTime
-
-                        var mobile = 0L
-                        var wifi = 0L
-
-                        if (endTime > resetTimestamp) {
-                            mobile = getUsage(ConnectivityManager.TYPE_MOBILE, queryStartTime, endTime)
-                            wifi = getUsage(ConnectivityManager.TYPE_WIFI, queryStartTime, endTime)
-                        }
+                        val (m, w) = NetworkUsageHelper.getUsageInRange(applicationContext, startTime, endTime)
+                        val mobile = m
+                        val wifi = w
 
                         usageList.add(DailyUsage(startTime, mobile, wifi, mobile + wifi))
 
@@ -634,6 +636,8 @@ class MainActivity : AppCompatActivity() {
                 withContext(Dispatchers.Main) {
                     Toast.makeText(this@MainActivity, getString(R.string.error_loading_data), Toast.LENGTH_SHORT).show()
                 }
+            } finally {
+                isRefreshing = false
             }
         }
     }
@@ -647,12 +651,7 @@ class MainActivity : AppCompatActivity() {
             val startTime = calendar.timeInMillis
             val endTime = System.currentTimeMillis()
 
-            val resetTimestamp = prefs.getLong(Constants.PREF_RESET_TIMESTAMP, 0L)
-            val queryStartTime = if (startTime < resetTimestamp) resetTimestamp else startTime
-
-            if (endTime <= resetTimestamp) return 0L
-
-            getUsage(ConnectivityManager.TYPE_MOBILE, queryStartTime, endTime)
+            NetworkUsageHelper.getUsageInRange(applicationContext, startTime, endTime).first
         } catch (e: Exception) {
             Log.e("MainActivity", "Error getting today mobile usage", e)
             0L
@@ -772,42 +771,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * ⭐ FIXED FUNCTION: Uses querySummary (with bucket iteration) + Sanity Check
-     * Replaces broken querySummaryForDevice.
-     */
-    private fun getUsage(networkType: Int, startTime: Long, endTime: Long): Long {
-        if (networkStatsManager == null) return 0L
 
-        var totalBytes = 0L
-        var networkStats: NetworkStats? = null
-        try {
-            val bucket = NetworkStats.Bucket()
-            // USE querySummary to iterate over buckets
-            networkStats = networkStatsManager?.querySummary(networkType, null, startTime, endTime)
-
-            // Fix: Add null check for querySummary result
-            if (networkStats == null) {
-                Log.w("MainActivity", "querySummary returned null for networkType: $networkType")
-                return 0L
-            }
-
-            while (networkStats.hasNextBucket()) {
-                networkStats.getNextBucket(bucket)
-                val bytes = bucket.rxBytes + bucket.txBytes
-
-                // 🛡️ SANITY CHECK: Filter out Garbage Data (anything > 100 TB is a glitch)
-                if (bytes > 0 && bytes < 100L * 1024 * 1024 * 1024 * 1024) {
-                    totalBytes += bytes
-                }
-            }
-        } catch (e: Exception) {
-            Log.e("MainActivity", "Error getting network usage.", e)
-        } finally {
-            networkStats?.close()
-        }
-        return totalBytes
-    }
 
     private fun formatData(bytes: Long): String {
         return try {
