@@ -11,7 +11,8 @@ class BootReceiver : BroadcastReceiver() {
         val showSpeed = prefs.getBoolean(Constants.PREF_SHOW_SPEED, true)
 
         if (showSpeed && (intent.action == Intent.ACTION_BOOT_COMPLETED ||
-                    intent.action == "android.intent.action.QUICKBOOT_POWERON")) {
+                    intent.action == "android.intent.action.QUICKBOOT_POWERON" ||
+                    intent.action == "com.krishna.netspeedlite.RESTART_SERVICE")) {
 
             val serviceIntent = Intent(context, SpeedService::class.java)
             try {
@@ -19,13 +20,12 @@ class BootReceiver : BroadcastReceiver() {
                     // Android 12+ may throw ForegroundServiceStartNotAllowedException
                     // when started from broadcast receiver - catch and handle gracefully
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        // On Android 12+, use WorkManager or schedule for later
-                        // For now, just try to start and catch exception
                         try {
                             context.startForegroundService(serviceIntent)
                         } catch (e: Exception) {
-                            // Service cannot start from broadcast receiver on Android 12+
-                            // User will need to manually start the service
+                            // On Android 12+, we can't start foreground service from background
+                            // unless it qualifies for an exemption (like BOOT_COMPLETED).
+                            // RESTART_SERVICE might fail here if app is in background.
                             android.util.Log.w("BootReceiver", "Cannot start service from boot receiver on Android 12+", e)
                         }
                     } else {

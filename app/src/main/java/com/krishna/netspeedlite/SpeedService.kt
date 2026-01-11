@@ -128,6 +128,23 @@ class SpeedService : Service() {
         }
     }
 
+    // --- Screen State Handling ---
+    private var isScreenOn = true
+    private val screenStateReceiver = object : android.content.BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            when (intent.action) {
+                Intent.ACTION_SCREEN_OFF -> {
+                    isScreenOn = false
+                    stopUpdates()
+                }
+                Intent.ACTION_SCREEN_ON -> {
+                    isScreenOn = true
+                    startUpdates()
+                }
+            }
+        }
+    }
+
     override fun onCreate() {
         super.onCreate()
         prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE)
@@ -162,7 +179,27 @@ class SpeedService : Service() {
             return // Prevent further initialization if functionality failed
         }
 
+        // Register Screen On/Off receiver
+        try {
+            val filter = android.content.IntentFilter().apply {
+                addAction(Intent.ACTION_SCREEN_ON)
+                addAction(Intent.ACTION_SCREEN_OFF)
+            }
+            registerReceiver(screenStateReceiver, filter)
+        } catch (e: Exception) {
+            android.util.Log.e("SpeedService", "Error registering screen receiver", e)
+        }
+
+        startUpdates()
+    }
+
+    private fun startUpdates() {
+        handler.removeCallbacks(runnable) // Prevent duplicates
         handler.post(runnable)
+    }
+
+    private fun stopUpdates() {
+        handler.removeCallbacks(runnable)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -459,7 +496,31 @@ class SpeedService : Service() {
     override fun onDestroy() {
         handler.removeCallbacks(runnable)
         serviceScope.cancel()
-        // Removed: LRU cache automatically manages size, no need to clear
+
+        // Unregister receiver to prevent leaks
+        try {
+            unregisterReceiver(screenStateReceiver)
+        } catch (e: IllegalArgumentException) {
+            // Receiver not registered
+        }
+
+        // Restart service if it was killed system-side but user wants it on
+        try {
+            val showSpeed = prefs.getBoolean(Constants.PREF_SHOW_SPEED, true)
+            // Safety Check: Only restart if the service has lived for at least 2 seconds.
+            // This prevents an infinite crash loop if the service crashes immediately upon startup.
+            val livedLongEnough = (System.currentTimeMillis() - serviceStartTime) > 2000
+
+            if (showSpeed && livedLongEnough) {
+                // Send broadcast to restart service
+                val restartIntent = Intent(applicationContext, BootReceiver::class.java)
+                restartIntent.action = "com.krishna.netspeedlite.RESTART_SERVICE"
+                sendBroadcast(restartIntent)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("SpeedService", "Error in restart logic", e)
+        }
+
         super.onDestroy()
     }
 }

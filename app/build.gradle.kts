@@ -17,7 +17,7 @@ android {
         targetSdk = 35
 
         // ⭐ UPDATED: Version Code must be higher for Play Store update
-        versionCode = 15
+        versionCode = 16
 
         // ⭐ UPDATED: Version Name to reflect new release
         versionName = "1.0.1"
