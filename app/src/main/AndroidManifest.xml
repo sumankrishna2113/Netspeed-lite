@@ -51,6 +51,7 @@
             android:name=".SpeedService"
             android:enabled="true"
             android:exported="false"
+            android:stopWithTask="false"
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.property.FOREGROUND_SERVICE_TYPE_SPECIAL_USE"

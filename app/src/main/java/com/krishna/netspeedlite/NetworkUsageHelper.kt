@@ -31,7 +31,10 @@ object NetworkUsageHelper {
         val endTime = calendar.timeInMillis
 
         // 3. Get Data
+        // 3. Get Data (Suppress deprecation for TYPE_MOBILE/WIFI as NetworkStatsManager still uses them)
+        @Suppress("DEPRECATION")
         val mobile = getSafeUsage(statsManager, ConnectivityManager.TYPE_MOBILE, startTime, endTime)
+        @Suppress("DEPRECATION")
         val wifi = getSafeUsage(statsManager, ConnectivityManager.TYPE_WIFI, startTime, endTime)
 
         return Pair(mobile, wifi)
@@ -45,7 +48,9 @@ object NetworkUsageHelper {
         val statsManager = context.getSystemService(Context.NETWORK_STATS_SERVICE) as? NetworkStatsManager
             ?: return Pair(0L, 0L)
 
+        @Suppress("DEPRECATION")
         val mobile = getSafeUsage(statsManager, ConnectivityManager.TYPE_MOBILE, startTime, endTime)
+        @Suppress("DEPRECATION")
         val wifi = getSafeUsage(statsManager, ConnectivityManager.TYPE_WIFI, startTime, endTime)
 
         return Pair(mobile, wifi)

@@ -261,7 +261,9 @@ class MainActivity : AppCompatActivity() {
             .setTitle(R.string.permission_title)
             .setMessage(R.string.permission_rationale)
             .setPositiveButton(R.string.grant) { _, _ ->
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 requestPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            }
             }
             .setNegativeButton(R.string.deny, null)
             .show()
@@ -289,12 +291,14 @@ class MainActivity : AppCompatActivity() {
     private fun hasUsageStatsPermission(): Boolean {
         val appOps = getSystemService(Context.APP_OPS_SERVICE) as? AppOpsManager ?: return false
         val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            @Suppress("DEPRECATION")
             appOps.unsafeCheckOpNoThrow(
                 AppOpsManager.OPSTR_GET_USAGE_STATS,
                 Process.myUid(),
                 packageName
             )
         } else {
+            @Suppress("DEPRECATION")
             appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), packageName)
         }
         return mode == AppOpsManager.MODE_ALLOWED

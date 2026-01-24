@@ -20,9 +20,11 @@ class SpeedServiceWorker(context: Context, params: WorkerParameters) : Worker(co
                     try {
                         applicationContext.startForegroundService(serviceIntent)
                     } catch (e: Exception) {
-                        // Background launch restrictions on Android 12+
+                        // Background launch restrictions on Android 12+ (API 31+)
                         // We can't force it if the system says no.
                         android.util.Log.w("SpeedServiceWorker", "Could not restart service (BG restricted): ${e.message}")
+                    } catch (e: android.app.ForegroundServiceStartNotAllowedException) {
+                         android.util.Log.w("SpeedServiceWorker", "BG launch restricted (Android 12+): ${e.message}")
                     }
                 } else {
                     applicationContext.startForegroundService(serviceIntent)

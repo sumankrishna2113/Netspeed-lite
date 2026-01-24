@@ -25,10 +25,13 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.os.Process
+import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.drawable.IconCompat
+import androidx.core.graphics.toColorInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -70,55 +73,15 @@ class SpeedService : Service() {
 
     private val serviceScope = CoroutineScope(Dispatchers.IO + kotlinx.coroutines.SupervisorJob())
 
-    // ===== DENSITY-INDEPENDENT ICON SIZE: Uses dp instead of fixed pixels =====
+    // ===== PROFESSIONAL FIX: DENSITY-AWARE SIZING =====
+    // Fixes Pixelation: Generates exact 1:1 pixels for the device.
+    // S24 Ultra (3.0x/4.0x) gets high res (72px/96px).
+    // Older phones (1.5x) get native res (36px).
+    // NO DOWNSCALING = NO PIXELATION.
     private val optimalIconSize: Int by lazy {
-        try {
-            val density = resources?.displayMetrics?.density ?: 2.0f
-            val baseDp = 64 // Use 64dp as base for large notification icons (Android guideline)
-
-            // Convert dp to pixels using device density
-            // This ensures proper scaling across all screen densities:
-            // MDPI (1.0x): 64px, HDPI (1.5x): 96px, XHDPI (2.0x): 128px
-            // XXHDPI (3.0x): 192px, XXXHDPI (4.0x): 256px
-            val baseSize = (baseDp * density).toInt()
-
-            // Apply manufacturer-specific adjustments as multipliers (not fixed values)
-            // This maintains density independence while accounting for rendering differences
-            val manufacturer = Build.MANUFACTURER.lowercase(Locale.ROOT)
-            val adjustmentFactor = when {
-                manufacturer.contains("samsung") -> 1.1f  // Samsung devices benefit from slightly larger icons
-
-                // OnePlus and Vivo devices need significantly larger icons to display properly
-                manufacturer.contains("oneplus") -> 1.5f  // Increased from 1.2f for better visibility
-                manufacturer.contains("vivo") -> 1.5f     // Increased from 1.2f for better visibility
-                manufacturer.contains("oppo") -> 1.4f    // Slightly less than OnePlus/Vivo
-                manufacturer.contains("realme") -> 1.4f  // Slightly less than OnePlus/Vivo
-
-                manufacturer.contains("xiaomi") ||
-                        manufacturer.contains("redmi") ||
-                        manufacturer.contains("poco") -> 1.15f
-
-                else -> 1.0f
-            }
-
-            // Calculate adjusted size
-            val adjustedSize = (baseSize * adjustmentFactor).toInt()
-
-            // For OnePlus and Vivo, ensure minimum size is larger to prevent small icons
-            // Ensure reasonable bounds: minimum 64px (1x MDPI), maximum 600px (increased for OnePlus/Vivo)
-            val finalSize = if (manufacturer.contains("oneplus") || manufacturer.contains("vivo")) {
-                adjustedSize.coerceIn(96, 600)  // Higher minimum and maximum for OnePlus/Vivo
-            } else {
-                adjustedSize.coerceIn(64, 512)
-            }
-
-
-
-            finalSize
-        } catch (e: Exception) {
-            android.util.Log.e("SpeedService", "Error calculating optimal icon size", e)
-            128 // Fallback to safe default (XHDPI)
-        }
+        val density = resources?.displayMetrics?.density ?: 2.0f
+        // Standard Android Status Bar Height is 24dp
+        (24 * density).toInt().coerceAtLeast(36) // Minimum safety
     }
 
     // Icon cache for performance - using LinkedHashMap for LRU behavior
@@ -600,8 +563,10 @@ class SpeedService : Service() {
     private fun hasUsageStatsPermission(): Boolean {
         val appOps = getSystemService(Context.APP_OPS_SERVICE) as? AppOpsManager ?: return false
         val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            @Suppress("DEPRECATION")
             appOps.unsafeCheckOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), packageName)
         } else {
+            @Suppress("DEPRECATION")
             appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), packageName)
         }
         return mode == AppOpsManager.MODE_ALLOWED
@@ -610,9 +575,18 @@ class SpeedService : Service() {
     private fun getWifiSignal(): Int {
         return try {
             val wm = applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager ?: return 0
+            
+            // Suppress deprecation for connectionInfo (deprecated in API 31)
+            @Suppress("DEPRECATION")
             val connectionInfo = wm.connectionInfo
             val rssi = connectionInfo?.rssi ?: return 0
-            WifiManager.calculateSignalLevel(rssi, 100)
+            
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                wm.calculateSignalLevel(rssi)
+            } else {
+                @Suppress("DEPRECATION")
+                WifiManager.calculateSignalLevel(rssi, 100)
+            }
         } catch (e: SecurityException) {
             // Android 10+ requires location permission for WiFi info
             0
@@ -706,63 +680,78 @@ class SpeedService : Service() {
             iconCache[cacheKey]?.let { return it }
         }
 
-        // Fix: LRU cache automatically removes eldest entries when size exceeds limit
-        // No need to manually clear the entire cache
-
         val size = optimalIconSize
 
-        // Check if device is OnePlus or Vivo for additional adjustments
-        val manufacturer = Build.MANUFACTURER.lowercase(Locale.ROOT)
-        val isOnePlusOrVivo = manufacturer.contains("oneplus") || manufacturer.contains("vivo")
-
         try {
+            // Stacked Layout: Speed (Top) / Unit (Bottom)
+            // Using "sans-serif-medium" for system status bar consistency
+
+            
             val bitmap = createBitmap(size, size, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bitmap)
 
-            // ===== KEY FIX: Use higher quality settings =====
             val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = Color.WHITE
                 textAlign = Paint.Align.CENTER
-                typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
-                isFilterBitmap = true  // Important for scaling
-                isDither = true        // Better quality
-                // For OnePlus/Vivo, use LCD rendering hint for better text clarity
-                if (isOnePlusOrVivo) {
-                    isLinearText = false  // Use subpixel rendering when available
-                }
+                // Perfect Balance: "sans-serif-medium" matches the Status Bar Clock
+                typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+                isFilterBitmap = true
+                isDither = true
+                
+                // Polish: Subtle Shadow (instead of lightning) for contrast & anti-aliasing help
+                // Polish: Subtle Shadow (instead of lightning) for contrast & anti-aliasing help
+                setShadowLayer(2f, 0f, 1f, "#40000000".toColorInt())
             }
 
-            // Adjust text size proportions for OnePlus/Vivo to ensure visibility
-            val speedTextSizeMultiplier = if (isOnePlusOrVivo) 0.75f else 0.72f
-            val unitTextSizeMultiplier = if (isOnePlusOrVivo) 0.40f else 0.38f
+            // Uniform Reference Scaling: Scale based on "888" to ensure consistent height/thickness
 
-            // Keep your original proportions - adjusted for OnePlus/Vivo
-            paint.textSize = size * speedTextSizeMultiplier
+            
+            // 1. Calculate Standardized Font Size using Reference "888"
+            paint.textSize = size * 1.0f 
+            val refRect = android.graphics.Rect()
+            paint.getTextBounds("888", 0, 3, refRect)
+            
+            // Fixed Target: 56% of Canvas
+            val targetVisualHeight = size * 0.56f
+            val heightScale = targetVisualHeight / refRect.height().toFloat()
+            val masterTextSize = paint.textSize * heightScale
+            
+            // Apply Master Size
+            paint.textSize = masterTextSize
+            
+            // 2. Safety Check (Horizontal)
+            // Only shrink if THIS specific number is too wide (e.g. "999")
             val textWidth = paint.measureText(speed)
-            if (textWidth > size * 0.94f) {
-                paint.textScaleX = (size * 0.94f) / textWidth
+            val maxSpeedWidth = size * 0.96f
+            if (textWidth > maxSpeedWidth) {
+                paint.textScaleX = maxSpeedWidth / textWidth
             }
             
-            // Fix: Dynamic Vertical Alignment
-            val speedRect = android.graphics.Rect()
-            paint.getTextBounds(speed, 0, speed.length, speedRect)
-            val speedY = (size * 0.58f) // Keep slightly upper bias as before but more consistent
+            // 3. Draw Speed
+            // Vertical Alignment: Align based on reference top to keep baseline stable
+
+            val reMeasuredRefRect = android.graphics.Rect()
+            paint.getTextBounds("888", 0, 3, reMeasuredRefRect)
+            
+            // Align Top of "888" to top of canvas
+            val speedY = -reMeasuredRefRect.top.toFloat() + (size * 0.02f)
             canvas.drawText(speed, size / 2f, speedY, paint)
 
-            paint.textScaleX = 1.0f
-            paint.textSize = size * unitTextSizeMultiplier
+            // 4. Draw Unit (Constant Size)
+            paint.textScaleX = 1.0f 
+            paint.textSize = size * 0.40f 
             
-            // Align Unit Text
             val unitRect = android.graphics.Rect()
             paint.getTextBounds(unit, 0, unit.length, unitRect)
-            val unitY = (size * 0.95f)
+            
+            val unitY = size.toFloat() - unitRect.bottom - (size * 0.02f)
             canvas.drawText(unit, size / 2f, unitY, paint)
 
             val iconCompat = IconCompat.createWithBitmap(bitmap)
             synchronized(iconCache) {
                 iconCache[cacheKey] = iconCompat
             }
-
+            
             return iconCompat
         } catch (e: Exception) {
             android.util.Log.e("SpeedService", "Error creating speed icon", e)
