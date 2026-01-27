@@ -322,11 +322,17 @@ class MainActivity : AppCompatActivity() {
             try {
                 val usageList = ArrayList<DailyUsage>()
                 val calendar = Calendar.getInstance()
-
-                var totalMobile = 0L
-                var totalWifi = 0L
+                val currentMonth = calendar.get(Calendar.MONTH)
+                
+                var totalMobile30 = 0L
+                var totalWifi30 = 0L
+                
                 var last7DaysMobile = 0L
                 var last7DaysWifi = 0L
+
+                // Track "This Month" separately
+                var totalMobileMonth = 0L
+                var totalWifiMonth = 0L
 
                 for (i in 0 until 30) {
                     try {
@@ -335,6 +341,9 @@ class MainActivity : AppCompatActivity() {
                         calendar.set(Calendar.SECOND, 0)
                         calendar.set(Calendar.MILLISECOND, 0)
                         val startTime = calendar.timeInMillis
+                        
+                        // Check if this day belongs to the current month (for "This Month" accumulation)
+                        val isCurrentMonth = calendar.get(Calendar.MONTH) == currentMonth
 
                         calendar.set(Calendar.HOUR_OF_DAY, 23)
                         calendar.set(Calendar.MINUTE, 59)
@@ -345,7 +354,7 @@ class MainActivity : AppCompatActivity() {
                         val (m, w) = if (hasUsageStatsPermission()) {
                             val (mob, wifi) = NetworkUsageHelper.getUsageInRange(applicationContext, startTime, endTime)
                             
-                            // SYNC: Persist system data to manual cache so it remains available if permission is revoked
+                            // SYNC: Persist system data to manual cache
                             try {
                                 val dateKey = SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date(startTime))
                                 prefs.edit { 
@@ -364,10 +373,17 @@ class MainActivity : AppCompatActivity() {
                         val mobile = m
                         val wifi = w
 
-                        usageList.add(DailyUsage(startTime, mobile, wifi, mobile + wifi))
+                        // Add to usage list only if it's part of the current month
+                        if (isCurrentMonth) {
+                            usageList.add(DailyUsage(startTime, mobile, wifi, mobile + wifi))
+                            totalMobileMonth += mobile
+                            totalWifiMonth += wifi
+                        }
 
-                        totalMobile += mobile
-                        totalWifi += wifi
+                        // Always add to 30-day total
+                        totalMobile30 += mobile
+                        totalWifi30 += wifi
+
                         if (i < 7) {
                             last7DaysMobile += mobile
                             last7DaysWifi += wifi
@@ -376,14 +392,14 @@ class MainActivity : AppCompatActivity() {
                         calendar.add(Calendar.DAY_OF_YEAR, -1)
                     } catch (e: Exception) {
                         Log.e("MainActivity", "Error processing day $i", e)
-                        // Continue with next day even if one fails
                         calendar.add(Calendar.DAY_OF_YEAR, -1)
                     }
                 }
 
                 withContext(Dispatchers.Main) {
                     usageAdapter.updateData(usageList)
-                    updateUIStats(last7DaysMobile, last7DaysWifi, totalMobile, totalWifi)
+                    // Pass Month totals for "This Month" row, and 30-day totals for Footer
+                    updateUIStats(last7DaysMobile, last7DaysWifi, totalMobileMonth, totalWifiMonth, totalMobile30, totalWifi30)
                 }
             } catch (e: Exception) {
                 Log.e("MainActivity", "Error refreshing data", e)
@@ -533,16 +549,18 @@ class MainActivity : AppCompatActivity() {
         notificationManager?.createNotificationChannel(channel)
     }
 
-    private fun updateUIStats(m7: Long, w7: Long, m30: Long, w30: Long) {
+    private fun updateUIStats(m7: Long, w7: Long, mThisMonth: Long, wThisMonth: Long, m30: Long, w30: Long) {
         binding.apply {
             tv7DaysMobile.text = formatData(m7)
             tv7DaysWifi.text = formatData(w7)
             tv7DaysTotal.text = formatData(m7 + w7)
 
-            tv30DaysMobile.text = formatData(m30)
-            tv30DaysWifi.text = formatData(w30)
-            tv30DaysTotal.text = formatData(m30 + w30)
+            // Shows "This Month" data
+            tv30DaysMobile.text = formatData(mThisMonth)
+            tv30DaysWifi.text = formatData(wThisMonth)
+            tv30DaysTotal.text = formatData(mThisMonth + wThisMonth)
 
+            // Shows "Last 30 Days" Total (Footer)
             tvTotalMobile.text = formatData(m30)
             tvTotalWifi.text = formatData(w30)
             tvGrandTotal.text = formatData(m30 + w30)

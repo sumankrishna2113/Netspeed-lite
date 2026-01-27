@@ -263,7 +263,7 @@
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1.2"
-                                android:text="@string/last_30_days"
+                                android:text="@string/this_month"
                                 android:gravity="start|center_vertical"
                                 android:textColor="?android:attr/textColorSecondary"
                                 android:fontFamily="sans-serif"
