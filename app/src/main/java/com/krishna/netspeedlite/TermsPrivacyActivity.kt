@@ -42,7 +42,9 @@ class TermsPrivacyActivity : AppCompatActivity() {
         // Dynamic last updated date
         tvLastUpdated.text = getString(R.string.last_updated_value)
         
+        // Make links clickable and set link color explicitly
         textContent.movementMethod = LinkMovementMethod.getInstance()
+        textContent.setLinkTextColor(android.graphics.Color.parseColor("#03A9F4"))
     }
 
     private fun getPrivacyBody(): String {
@@ -99,7 +101,7 @@ class TermsPrivacyActivity : AppCompatActivity() {
             <br>
 
             <h4 style="color:#2196F3">9. Contact Us</h4>
-            <p>If you have questions about this policy, please contact us via the developer email on the Google Play Store.</p>
+            <p>If you have questions about this policy, please contact us at <a href="mailto:contact.krishna.apps@gmail.com"><b><font color="#03A9F4">contact.krishna.apps@gmail.com</font></b></a>.</p>
         """.trimIndent()
     }
 }

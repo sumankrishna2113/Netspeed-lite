@@ -133,9 +133,11 @@
                         android:layout_height="wrap_content"
                         android:textSize="15sp"
                         android:textColor="?android:attr/textColorPrimary"
+                        android:textColorLink="#03A9F4"
                         android:lineSpacingMultiplier="1.5"
                         android:fontFamily="sans-serif"
-                        android:letterSpacing="0.02"/>
+                        android:letterSpacing="0.02"
+                        android:linksClickable="true"/>
 
                 </LinearLayout>
 

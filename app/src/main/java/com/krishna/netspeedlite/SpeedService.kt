@@ -831,29 +831,33 @@ class SpeedService : Service() {
         }
 
         // Unregister SharedPreferences listener
-        try {
-            prefs.unregisterOnSharedPreferenceChangeListener(prefsListener)
-        } catch (e: Exception) {
-            // Ignore
+        if (::prefs.isInitialized) {
+            try {
+                prefs.unregisterOnSharedPreferenceChangeListener(prefsListener)
+            } catch (e: Exception) {
+                // Ignore
+            }
         }
 
         // Restart service if it was killed system-side but user wants it on
-        try {
-            val showSpeed = prefs.getBoolean(Constants.PREF_SHOW_SPEED, true)
-            val isAlertEnabled = prefs.getBoolean(Constants.PREF_DAILY_LIMIT_ENABLED, false)
-            // Safety Check: Only restart if the service has lived for at least 2 seconds.
-            // This prevents an infinite crash loop if the service crashes immediately upon startup.
-            val livedLongEnough = (System.currentTimeMillis() - serviceStartTime) > 2000
+        if (::prefs.isInitialized) {
+            try {
+                val showSpeed = prefs.getBoolean(Constants.PREF_SHOW_SPEED, true)
+                val isAlertEnabled = prefs.getBoolean(Constants.PREF_DAILY_LIMIT_ENABLED, false)
+                // Safety Check: Only restart if the service has lived for at least 2 seconds.
+                // This prevents an infinite crash loop if the service crashes immediately upon startup.
+                val livedLongEnough = (System.currentTimeMillis() - serviceStartTime) > 2000
 
-            // Restart if either speed display OR alerts are enabled
-            if ((showSpeed || isAlertEnabled) && livedLongEnough) {
-                // Send broadcast to restart service
-                val restartIntent = Intent(applicationContext, BootReceiver::class.java)
-                restartIntent.action = "com.krishna.netspeedlite.RESTART_SERVICE"
-                sendBroadcast(restartIntent)
+                // Restart if either speed display OR alerts are enabled
+                if ((showSpeed || isAlertEnabled) && livedLongEnough) {
+                    // Send broadcast to restart service
+                    val restartIntent = Intent(applicationContext, BootReceiver::class.java)
+                    restartIntent.action = "com.krishna.netspeedlite.RESTART_SERVICE"
+                    sendBroadcast(restartIntent)
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("SpeedService", "Error in restart logic", e)
             }
-        } catch (e: Exception) {
-            android.util.Log.e("SpeedService", "Error in restart logic", e)
         }
 
         super.onDestroy()

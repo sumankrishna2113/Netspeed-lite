@@ -458,7 +458,10 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        if (!isAlertEnabled) return
+        // This code only runs if SpeedService is NOT running (both showSpeed and isAlertEnabled are false)
+        // In this case, there's no alert to check anyway, so we return early
+        // Note: This is dead code since isAlertEnabled is already false from the check above
+        // Keeping the logic below for potential future use when service is off but alerts are on
 
         val limitMb = prefs.getFloat(Constants.PREF_DAILY_LIMIT_MB, 0f)
         if (limitMb <= 0f) return
