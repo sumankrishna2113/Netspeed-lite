@@ -524,7 +524,7 @@ class SpeedService : Service() {
                 speedTitle += "   ↓ ${formatSimple(rxDelta)}   ↑ ${formatSimple(txDelta)}"
             }
             if (prefs.getBoolean(Constants.PREF_SHOW_WIFI_SIGNAL, false)) {
-                speedTitle += "   \uD83D\uDCF6 ${getWifiSignal()}%"
+                speedTitle += "   WiFi: ${getWifiSignal()}%"
             }
             buildNotification(speedTitle, speedVal, unitVal, details.toString())
         } else {
