@@ -734,17 +734,17 @@ class SpeedService : Service() {
             paint.getTextBounds("888", 0, 3, reMeasuredRefRect)
             
             // Align Top of "888" to top of canvas
-            val speedY = -reMeasuredRefRect.top.toFloat() + (size * 0.02f)
+            val speedY = -reMeasuredRefRect.top.toFloat() + (size * 0.00f) // Tight layout: 0 padding
             canvas.drawText(speed, size / 2f, speedY, paint)
 
             // 4. Draw Unit (Constant Size)
             paint.textScaleX = 1.0f 
-            paint.textSize = size * 0.40f 
+            paint.textSize = size * 0.48f // Increased from 0.40f
             
             val unitRect = android.graphics.Rect()
             paint.getTextBounds(unit, 0, unit.length, unitRect)
             
-            val unitY = size.toFloat() - unitRect.bottom - (size * 0.02f)
+            val unitY = size.toFloat() - unitRect.bottom - (size * 0.00f) // Tight layout: 0 padding
             canvas.drawText(unit, size / 2f, unitY, paint)
 
             val iconCompat = IconCompat.createWithBitmap(bitmap)
