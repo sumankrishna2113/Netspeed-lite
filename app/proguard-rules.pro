@@ -26,3 +26,26 @@
 # 6. Optimization: Allow aggressive shrinking but keep these naming patterns
 -dontwarn java.nio.file.**
 -dontnote okhttp3.**
+
+# ==============================================================================
+# PRODUCTION OPTIMIZATION - Reduces False Positive Virus Detections
+# ==============================================================================
+
+# 7. Strip ALL Log calls from release builds (important for security scanners)
+-assumenosideeffects class android.util.Log {
+    public static int v(...);
+    public static int d(...);
+    public static int i(...);
+    public static int w(...);
+    public static int e(...);
+    public static int wtf(...);
+}
+
+# 8. Remove debug assertions
+-assumenosideeffects class kotlin.jvm.internal.Intrinsics {
+    public static void checkNotNull(...);
+    public static void checkExpressionValueIsNotNull(...);
+    public static void checkNotNullExpressionValue(...);
+    public static void checkParameterIsNotNull(...);
+    public static void checkNotNullParameter(...);
+}
