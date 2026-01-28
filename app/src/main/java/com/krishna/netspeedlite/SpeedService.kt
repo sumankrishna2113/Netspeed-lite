@@ -598,16 +598,20 @@ class SpeedService : Service() {
         return try {
             val wm = applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager ?: return 0
             
-            // Suppress deprecation for connectionInfo (deprecated in API 31)
             @Suppress("DEPRECATION")
             val connectionInfo = wm.connectionInfo
             val rssi = connectionInfo?.rssi ?: return 0
+
+            // Standard WiFi limits for signal quality
+            // -55 dBm or higher is excellent (100%)
+            // -100 dBm or lower is unusable (0%)
+            val minRssi = -100
+            val maxRssi = -55
             
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                wm.calculateSignalLevel(rssi)
-            } else {
-                @Suppress("DEPRECATION")
-                WifiManager.calculateSignalLevel(rssi, 100)
+            return when {
+                rssi <= minRssi -> 0
+                rssi >= maxRssi -> 100
+                else -> ((rssi - minRssi) * 100) / (maxRssi - minRssi)
             }
         } catch (e: SecurityException) {
             // Android 10+ requires location permission for WiFi info
