@@ -8,6 +8,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.appbar.MaterialToolbar
 
 import androidx.activity.enableEdgeToEdge
+import androidx.core.graphics.toColorInt
 
 class TermsPrivacyActivity : AppCompatActivity() {
 
@@ -44,7 +45,7 @@ class TermsPrivacyActivity : AppCompatActivity() {
         
         // Make links clickable and set link color explicitly
         textContent.movementMethod = LinkMovementMethod.getInstance()
-        textContent.setLinkTextColor(android.graphics.Color.parseColor("#03A9F4"))
+        textContent.setLinkTextColor("#03A9F4".toColorInt())
     }
 
     private fun getPrivacyBody(): String {
@@ -66,7 +67,6 @@ class TermsPrivacyActivity : AppCompatActivity() {
                 <li><strong>INTERNET:</strong> Required for the speed meter to measure your active network throughput.</li>
                 <li><strong>ACCESS_NETWORK_STATE:</strong> Required to detect whether you are connected to mobile data or Wi-Fi.</li>
                 <li><strong>ACCESS_WIFI_STATE:</strong> Required to read your Wi-Fi signal strength for the optional Wi-Fi indicator feature.</li>
-                <li><strong>ACCESS_FINE_LOCATION:</strong> Explicitly required by Android 8.1+ to read precise Wi-Fi signal strength (RSSI). We use this permission <strong>only</strong> to display your Wi-Fi signal bar. We <strong>never</strong> track, store, or share your physical location.</li>
                 <li><strong>FOREGROUND_SERVICE / FOREGROUND_SERVICE_SPECIAL_USE:</strong> Required to keep the speed meter running persistently in the status bar notification.</li>
                 <li><strong>PACKAGE_USAGE_STATS (Usage Access):</strong> Required to display historical data usage (Today, Last 7 Days, This Month).</li>
                 <li><strong>POST_NOTIFICATIONS:</strong> Required to show the live speed indicator notification.</li>

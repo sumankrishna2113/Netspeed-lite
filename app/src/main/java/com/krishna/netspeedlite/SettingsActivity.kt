@@ -142,12 +142,7 @@ class SettingsActivity : AppCompatActivity() {
 
         switchShowWifiSignal.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-                    if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                         // Request permission
-                         ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION), 101)
-                    }
-                }
+                // No permission needed anymore
             }
             prefs.edit { putBoolean(Constants.PREF_SHOW_WIFI_SIGNAL, isChecked) }
         }
@@ -361,16 +356,5 @@ class SettingsActivity : AppCompatActivity() {
         }
         return mode == AppOpsManager.MODE_ALLOWED
     }
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == 101) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Permission granted, do nothing (toggle is already ON)
-            } else {
-                // Permission denied, turn off toggle
-                binding.switchShowWifiSignal.isChecked = false
-                Toast.makeText(this, "Location permission is required for WiFi Signal", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
+
 }

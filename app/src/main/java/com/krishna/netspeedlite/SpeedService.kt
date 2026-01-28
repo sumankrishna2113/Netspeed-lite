@@ -595,29 +595,49 @@ class SpeedService : Service() {
     }
 
     private fun getWifiSignal(): Int {
-        return try {
-            val wm = applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager ?: return 0
-            
-            @Suppress("DEPRECATION")
-            val connectionInfo = wm.connectionInfo
-            val rssi = connectionInfo?.rssi ?: return 0
-
-            // Standard WiFi limits for signal quality
-            // -55 dBm or higher is excellent (100%)
-            // -100 dBm or lower is unusable (0%)
+        try {
             val minRssi = -100
             val maxRssi = -55
-            
+            var rssi = -127
+
+            // Method 1: ConnectivityManager (Android 10+ / API 29+)
+            // Preferable as it doesn't strictly require Location Permission for RSSI on some versions
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val cm = applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+                if (cm != null) {
+                    val activeNetwork = cm.activeNetwork
+                    val caps = cm.getNetworkCapabilities(activeNetwork)
+                    if (caps != null && caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+                        val transportInfo = caps.transportInfo
+                        if (transportInfo is android.net.wifi.WifiInfo) {
+                            rssi = transportInfo.rssi
+                        }
+                    }
+                }
+            }
+
+            // Method 2: WifiManager Fallback (Older Android or if Method 1 fails)
+            if (rssi == -127) {
+                val wm = applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
+                if (wm != null) {
+                    @Suppress("DEPRECATION")
+                    val connectionInfo = wm.connectionInfo
+                    if (connectionInfo != null) {
+                        rssi = connectionInfo.rssi
+                    }
+                }
+            }
+
+            // If still invalid, return 0
+            if (rssi == -127) return 0
+
             return when {
                 rssi <= minRssi -> 0
                 rssi >= maxRssi -> 100
                 else -> ((rssi - minRssi) * 100) / (maxRssi - minRssi)
             }
-        } catch (e: SecurityException) {
-            // Android 10+ requires location permission for WiFi info
-            0
         } catch (e: Exception) {
-            0
+            return 0
         }
     }
 
